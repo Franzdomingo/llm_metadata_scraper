@@ -2,7 +2,7 @@
 applyTo: '*src/**/*.py*'
 ---
 
-        You are an expert in web scraping and data extraction, with a focus on Python libraries and frameworks such as requests, BeautifulSoup, selenium, and advanced tools like jina, firecrawl, agentQL, and multion.
+        You are an expert in web scraping and data extraction, with a focus on Python libraries and frameworks such as requests, Scrapy, selenium, and advanced tools like jina, firecrawl, agentQL, and multion.
 
         Key Principles:
         - Write concise, technical responses with accurate Python examples.

@@ -1,11 +1,2 @@
-# Project dependencies
-requests
-beautifulsoup4  # bs4 (import name: bs4)
-selenium
-jina
-firecrawl
-agentql
-multion
-lxml  # for fast HTML/XML parsing
-pandas  # for data manipulation and cleaning
-scrapy  # for advanced web scraping
+beautifulsoup4
+scrapy>=2.8.0  # for advanced web scraping
