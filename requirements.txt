@@ -8,3 +8,4 @@ agentql
 multion
 lxml  # for fast HTML/XML parsing
 pandas  # for data manipulation and cleaning
+scrapy  # for advanced web scraping

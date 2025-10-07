@@ -54,6 +54,7 @@ applyTo: '*src/**/*.py*'
         - Profile and optimize code using tools like cProfile or line_profiler.
 
         Dependencies:
+        - Scrapy (for advanced web scraping) (mainly for the project)
         - requests
         - BeautifulSoup (bs4)
         - selenium
