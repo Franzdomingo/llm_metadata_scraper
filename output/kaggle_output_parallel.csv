@@ -1,0 +1,492 @@
+name,kaggle_url
+AI21 Jamba 1.7,https://www.kaggle.com/models/ai21labs/ai21-jamba-1.7
+AIAgenticOptimizedCodeLLM,https://www.kaggle.com/models/andrometocs/aiagenticoptimizedcodellm
+AIBusinessAnalystDocumentGenerator,https://www.kaggle.com/models/andrometocs/aibusinessanalystdocumentgenerator
+ALBERT,https://www.kaggle.com/models/keras/albert
+Alpaca,https://www.kaggle.com/models/tatsu-lab/alpaca
+AlpacaFarm,https://www.kaggle.com/models/tatsu-lab/alpaca-farm
+AlphaMaze v0.2,https://www.kaggle.com/models/menlo/alphamaze-v0.2
+AlphaSpace,https://www.kaggle.com/models/menlo/alphaspace
+AndroGemmaLLMPipelineModel,https://www.kaggle.com/models/andrometocs/androgemmallmpipelinemodel
+AndroLGBMEnsemblePipeline,https://www.kaggle.com/models/andrometocs/androlgbmensemblepipeline
+Andro_custom_ml_vector_regression_model,https://www.kaggle.com/models/andrometocs/andro_custom_ml_vector_regression_model
+Andrometocs_English_4Indian_Languages_V1.pickle,https://www.kaggle.com/models/andrometocs/andrometocs_english_4indian_languages_v1.pickle
+Audiobox Aesthetics,https://www.kaggle.com/models/metaresearch/audiobox-aesthetics
+Aya Expanse,https://www.kaggle.com/models/cohereforai/aya-expanse
+Aya Vision,https://www.kaggle.com/models/cohereforai/aya-vision
+BART,https://www.kaggle.com/models/keras/bart
+BASNet,https://www.kaggle.com/models/keras/basnet
+BERT,https://www.kaggle.com/models/keras/bert
+BLOOM,https://www.kaggle.com/models/keras/bloom
+CLIP,https://www.kaggle.com/models/keras/clip
+CLIP ViT,https://www.kaggle.com/models/laionai/clip-vit
+CSPDarkNet,https://www.kaggle.com/models/keras/cspdarknet
+CenterPillar,https://www.kaggle.com/models/keras/centerpillar
+ChatGLM2,https://www.kaggle.com/models/thudm-keg/chatglm2
+Clean NHiTS Model,https://www.kaggle.com/models/kp-labs/clean-nhits-model
+Code Llama,https://www.kaggle.com/models/metaresearch/codellama
+CodeGemma,https://www.kaggle.com/models/keras/codegemma
+CodeGemma,https://www.kaggle.com/models/google/codegemma
+ColQwen,https://www.kaggle.com/models/metric-ai/colqwen
+Command R Plus,https://www.kaggle.com/models/cohereforai/c4ai-command-r-plus
+Conformer,https://www.kaggle.com/models/kaggle/conformer
+Contrastive Language-Image Pre-Training,https://www.kaggle.com/models/kerashub/clip
+Cucaracha - ImgClass - Brazilian Personal Document,https://www.kaggle.com/models/cucaracha-project/cucaracha-imgclass-brazilian-personal-document
+Cucaracha - ImgClass - Document is signed,https://www.kaggle.com/models/cucaracha-project/cucaracha-imgclass-document-is-signed
+D-FINE,https://www.kaggle.com/models/keras/d-fine
+DINO v2,https://www.kaggle.com/models/metaresearch/dinov2
+DINOV2,https://www.kaggle.com/models/keras/dinov2
+DataGemma RAG,https://www.kaggle.com/models/google/datagemma-rag
+DataGemma RIG,https://www.kaggle.com/models/google/datagemma-rig
+DeBERTaV3,https://www.kaggle.com/models/keras/deberta_v3
+DePlot,https://www.kaggle.com/models/google/deplot
+DeepLabV3,https://www.kaggle.com/models/kerashub/deeplabv3
+DeepLabV3Plus,https://www.kaggle.com/models/keras/deeplabv3plus
+DeepSeek Coder V2,https://www.kaggle.com/models/deepseek-ai/deepseek-coder-v2
+DeepSeek Math,https://www.kaggle.com/models/deepseek-ai/deepseek-math
+DeepSeek Prover,https://www.kaggle.com/models/deepseek-ai/deepseek-prover
+DeepSeek R1,https://www.kaggle.com/models/deepseek-ai/deepseek-r1
+DeepSeek R1 0528,https://www.kaggle.com/models/deepseek-ai/deepseek-r1-0528
+DeepSeek V2,https://www.kaggle.com/models/deepseek-ai/deepseek-v2
+DeepSeek V3,https://www.kaggle.com/models/deepseek-ai/deepseek-v3
+DeepseekCodingPatternPipeline,https://www.kaggle.com/models/andrometocs/deepseekcodingpatternpipeline
+DeiT,https://www.kaggle.com/models/keras/deit
+DenseNet,https://www.kaggle.com/models/keras/densenet
+DenseNet,https://www.kaggle.com/models/kerashub/densenet
+Depth Anything,https://www.kaggle.com/models/keras/depth-anything
+Devstral Small 2507,https://www.kaggle.com/models/mistral-ai/devstral-small-2507
+Devstral-Small-2505,https://www.kaggle.com/models/mistral-ai/devstral-small-2505
+DistilBERT,https://www.kaggle.com/models/keras/distil_bert
+Dolly 2.0,https://www.kaggle.com/models/databricks/dolly-v2
+EDADatascienceAIAgent,https://www.kaggle.com/models/andrometocs/edadatascienceaiagent
+ELECTRA,https://www.kaggle.com/models/keras/electra
+ESM-2,https://www.kaggle.com/models/keras/esm-2
+EfficientNet,https://www.kaggle.com/models/timm/tf-efficientnet
+EfficientNet,https://www.kaggle.com/models/keras/efficientnet
+EfficientNet,https://www.kaggle.com/models/kerashub/efficientnet
+EfficientNet CondConv,https://www.kaggle.com/models/timm/tf-efficientnet-condconv
+EfficientNet Lite,https://www.kaggle.com/models/timm/tf-efficientnet-lite
+EfficientNetV2,https://www.kaggle.com/models/keras/efficientnetv2
+EmbeddingGemma,https://www.kaggle.com/models/google/embeddinggemma
+F-VLM,https://www.kaggle.com/models/googleai/f-vlm
+FLUX.1,https://www.kaggle.com/models/black-forest-labs/flux
+FNet,https://www.kaggle.com/models/keras/f_net
+Falcon,https://www.kaggle.com/models/keras/falcon
+FasterRCNN,https://www.kaggle.com/models/keras/fasterrcnn
+GPT-2,https://www.kaggle.com/models/keras/gpt2
+Gemini 1.0 Pro API,https://www.kaggle.com/models/google/gemini-api
+Gemini 1.5 Flash API,https://www.kaggle.com/models/google/gemini-1.5-flash-api
+Gemini 1.5 Flash-8B API,https://www.kaggle.com/models/google/gemini-1.5-flash-8b-api
+Gemini 1.5 Pro API,https://www.kaggle.com/models/google/gemini-1.5-pro-api
+Gemini 2.0 Flash API,https://www.kaggle.com/models/google/gemini-2.0-flash-api
+Gemini 2.5 Flash API,https://www.kaggle.com/models/google/gemini-2.5-flash-api
+Gemini 2.5 Pro API,https://www.kaggle.com/models/google/gemini-2.5-pro-api
+Gemma,https://www.kaggle.com/models/google/gemma
+Gemma,https://www.kaggle.com/models/keras/gemma
+Gemma 2,https://www.kaggle.com/models/google/gemma-2
+Gemma 2,https://www.kaggle.com/models/keras/gemma2
+Gemma 2 2b JPN IT,https://www.kaggle.com/models/google/gemma-2-2b-jpn-it
+Gemma 3,https://www.kaggle.com/models/google/gemma-3
+Gemma 3,https://www.kaggle.com/models/keras/gemma3
+Gemma 3n,https://www.kaggle.com/models/google/gemma-3n
+Gemma-SEA-LION-v3-9B,https://www.kaggle.com/models/ai-singapore/gemma2-9b-cpt-sea-lionv3-base
+Gemma-SEA-LION-v3-9B-IT,https://www.kaggle.com/models/ai-singapore/gemma2-9b-cpt-sea-lionv3-instruct
+Gemma-SEA-LION-v4-27B,https://www.kaggle.com/models/ai-singapore/gemma-sea-lion-v4-27b
+Gemma-SEA-LION-v4-27B-IT,https://www.kaggle.com/models/ai-singapore/gemma-sea-lion-v4-27b-it
+Gemma-SEA-LION-v4-27B-IT-FP8-Dynamic,https://www.kaggle.com/models/ai-singapore/gemma-sea-lion-v4-27b-it-fp8-dynamic
+Gemma-SEA-LION-v4-27B-IT-GGUF,https://www.kaggle.com/models/ai-singapore/gemma-sea-lion-v4-27b-it-gguf
+Gemma-SEA-LION-v4-27B-IT-NVFP4,https://www.kaggle.com/models/ai-singapore/gemma-sea-lion-v4-27b-it-nvfp4
+Granite 4.0,https://www.kaggle.com/models/ibm-granite/granite-4.0
+Granite Speech,https://www.kaggle.com/models/ibm-granite/granite-speech
+HGNetV2,https://www.kaggle.com/models/keras/hgnetv2
+Hallucination Evaluation Model (HHEM),https://www.kaggle.com/models/vectara/hallucination_evaluation_model
+ImageBind,https://www.kaggle.com/models/metaresearch/imagebind
+Insurance_Regression_MLmodel_load,https://www.kaggle.com/models/andrometocs/insurance_regression_mlmodel_load
+InternLM 2.5,https://www.kaggle.com/models/intern-ai/internlm2.5
+InternLM 3,https://www.kaggle.com/models/intern-ai/internlm-3
+InternLM XComposer 2.5,https://www.kaggle.com/models/intern-ai/internlm-xcomposer-2.5
+InternLM2,https://www.kaggle.com/models/intern-ai/internlm2
+InternLM2 Math,https://www.kaggle.com/models/intern-ai/internlm2-math
+Jamba,https://www.kaggle.com/models/ai21labs/jamba
+Janus Flow,https://www.kaggle.com/models/deepseek-ai/janus-flow
+Janus Pro,https://www.kaggle.com/models/deepseek-ai/janus-pro
+Japanese StableLM,https://www.kaggle.com/models/stabilityai/japanese-stablelm
+KaLM-embedding,https://www.kaggle.com/models/hitsz-tmg/kalm-embedding
+LAReQA,https://www.kaggle.com/models/google/lareqa
+LEALLA,https://www.kaggle.com/models/google/lealla
+LaBSE,https://www.kaggle.com/models/google/labse
+Llama 2,https://www.kaggle.com/models/metaresearch/llama-2
+Llama 2,https://www.kaggle.com/models/keras/llama2
+Llama 3,https://www.kaggle.com/models/metaresearch/llama-3
+Llama 3,https://www.kaggle.com/models/keras/llama3
+Llama 3.1,https://www.kaggle.com/models/metaresearch/llama-3.1
+Llama 3.2,https://www.kaggle.com/models/metaresearch/llama-3.2
+Llama 3.2 Vision,https://www.kaggle.com/models/metaresearch/llama-3.2-vision
+Llama 3.3,https://www.kaggle.com/models/metaresearch/llama-3.3
+Llama Guard 3.2,https://www.kaggle.com/models/metaresearch/llama-guard-3.2
+Llama Guard Vision 3.2,https://www.kaggle.com/models/metaresearch/llama-guard-vision-3.2
+Llama-SEA-LION-v3-8B,https://www.kaggle.com/models/ai-singapore/llama3.1-8b-cpt-sea-lionv3-base
+Llama-SEA-LION-v3-8B-IT,https://www.kaggle.com/models/ai-singapore/llama3.1-8b-cpt-sea-lionv3-instruct
+Llama3-Aloe-Alpha,https://www.kaggle.com/models/hpai-bsc/llama3-aloe-alpha
+Llama3.1-Aloe-Beta,https://www.kaggle.com/models/hpai-bsc/llama3.1-aloe-beta
+METAGENE-1,https://www.kaggle.com/models/metagene/metagene-1
+MMS,https://www.kaggle.com/models/metaresearch/mms
+MPT,https://www.kaggle.com/models/mosaicml/mpt
+Magistral Small 2506,https://www.kaggle.com/models/mistral-ai/magistral-small-2506
+Magistral Small 2506 gguf,https://www.kaggle.com/models/mistral-ai/magistral-small-2506-gguf
+Magistral Small 2509,https://www.kaggle.com/models/mistral-ai/magistral-small-2509
+MedImageInsight,https://www.kaggle.com/models/thelionai/medimageinsight
+MiDaS 3.0,https://www.kaggle.com/models/intel/midas-3.0
+MiT.,https://www.kaggle.com/models/keras/mit
+MiniCheck,https://www.kaggle.com/models/bespoke-labs/minicheck
+Mistral,https://www.kaggle.com/models/mistral-ai/mistral
+Mistral,https://www.kaggle.com/models/keras/mistral
+Mistral Small 24B,https://www.kaggle.com/models/mistral-ai/mistral-small-24b
+Mistral Small 3.1,https://www.kaggle.com/models/mistral-ai/mistral-small-3.1
+Mistral-Nemo-Base-2407-bnb-4bit,https://www.kaggle.com/models/unsloth-ai/mistral-nemo-base-2407-bnb-4bit
+Mix Transformer,https://www.kaggle.com/models/kerashub/mix-transformer
+MixNet,https://www.kaggle.com/models/timm/tf-mixnet
+Mixtral,https://www.kaggle.com/models/mistral-ai/mixtral
+Mixtral,https://www.kaggle.com/models/keras/mixtral
+MobileLLM,https://www.kaggle.com/models/metaresearch/mobilellm
+MobileNet v3,https://www.kaggle.com/models/timm/tf-mobilenet-v3
+MobileNetV3,https://www.kaggle.com/models/keras/mobilenetv3
+ModernBERT,https://www.kaggle.com/models/answer-ai/modernbert
+Molmo,https://www.kaggle.com/models/allenai/molmo
+Moonshine,https://www.kaggle.com/models/keras/moonshine
+MuRIL,https://www.kaggle.com/models/google/muril
+MusicGen,https://www.kaggle.com/models/metaresearch/musicgen
+NT-Java-1.1B,https://www.kaggle.com/models/infosys/nt-java-1.1b
+OLMo,https://www.kaggle.com/models/allenai/olmo
+OLMo 2,https://www.kaggle.com/models/allenai/olmo-2
+OPT,https://www.kaggle.com/models/keras/opt
+OWL-ViT,https://www.kaggle.com/models/google/owl-vit
+OpenPeerLLM,https://www.kaggle.com/models/openpeer-ai/openpeerllm
+OpenThinker,https://www.kaggle.com/models/open-thoughts/openthinker
+P-Tech Exploratory Data Analysis,https://www.kaggle.com/models/p-tech/p-tech-exploratory-data-analysis
+P-Tech Neural Networks,https://www.kaggle.com/models/p-tech/p-tech-neural-networks
+P-Tech Reinforcement Learning,https://www.kaggle.com/models/p-tech/p-tech-reinforcement-learning
+P-Tech Social Network Analysis,https://www.kaggle.com/models/p-tech/p-tech-social-network-analysis
+P-Tech Unsupervised Learning,https://www.kaggle.com/models/p-tech/p-tech-unsupervised-learning
+P-tech Supervised Learning,https://www.kaggle.com/models/p-tech/p-tech-supervised-learning
+P-tech Text Analytics,https://www.kaggle.com/models/p-tech/pttem-text-analytics
+PARSeq,https://www.kaggle.com/models/keras/parseq
+PaLM 2 Text & Chat APIs,https://www.kaggle.com/models/google/palm-api
+PaliGemma,https://www.kaggle.com/models/keras/paligemma
+PaliGemma,https://www.kaggle.com/models/google/paligemma
+PaliGemma 2,https://www.kaggle.com/models/google/paligemma-2
+PaliGemma 2,https://www.kaggle.com/models/keras/paligemma2
+PaliGemma-ft,https://www.kaggle.com/models/google/paligemma-ft
+Perch,https://www.kaggle.com/models/google/bird-vocalization-classifier
+Phi,https://www.kaggle.com/models/Microsoft/phi
+Phi-3,https://www.kaggle.com/models/Microsoft/phi-3
+Phi-3,https://www.kaggle.com/models/keras/phi3
+Poisoned NHiTS Models,https://www.kaggle.com/models/kp-labs/poisoned-nhits-models
+Proxy Lite,https://www.kaggle.com/models/convergence-ai/proxy-lite
+QVQ-72B-Preview,https://www.kaggle.com/models/qwen-lm/qvq-72b-preview
+QwQ-32B,https://www.kaggle.com/models/qwen-lm/qwq-32b
+QwQ-32B-Preview,https://www.kaggle.com/models/qwen-lm/qwq-32b-preview
+Qwen,https://www.kaggle.com/models/qwen-lm/qwen
+Qwen 1.5 MoE,https://www.kaggle.com/models/keras/qwen-1.5-moe
+Qwen 2.5,https://www.kaggle.com/models/keras/qwen
+Qwen 3,https://www.kaggle.com/models/qwen-lm/qwen-3
+Qwen 3,https://www.kaggle.com/models/keras/qwen-3
+Qwen 3 Coder,https://www.kaggle.com/models/qwen-lm/qwen3-coder
+Qwen 3 Embedding,https://www.kaggle.com/models/qwen-lm/qwen-3-embedding
+Qwen 3 Guard,https://www.kaggle.com/models/qwen-lm/qwen-3-guard
+Qwen 3 MoE,https://www.kaggle.com/models/keras/qwen-3-moe
+Qwen 3 Reranker,https://www.kaggle.com/models/qwen-lm/qwen-3-reranker
+Qwen 3 VL,https://www.kaggle.com/models/qwen-lm/qwen-3-vl
+Qwen2,https://www.kaggle.com/models/qwen-lm/qwen2
+Qwen2 Audio,https://www.kaggle.com/models/qwen-lm/qwen2-audio
+Qwen2 VL,https://www.kaggle.com/models/qwen-lm/qwen2-vl
+Qwen2.5,https://www.kaggle.com/models/qwen-lm/qwen2.5
+Qwen2.5 Coder,https://www.kaggle.com/models/qwen-lm/qwen2.5-coder
+Qwen2.5 Math,https://www.kaggle.com/models/qwen-lm/qwen2.5-math
+Qwen2.5 Omni,https://www.kaggle.com/models/qwen-lm/qwen2.5-omni
+Qwen2.5 VL,https://www.kaggle.com/models/qwen-lm/qwen2.5-vl
+Qwen2.5-1M,https://www.kaggle.com/models/qwen-lm/qwen2.5-1m
+Qwen3 Next 80B,https://www.kaggle.com/models/qwen-lm/qwen3-next-80b
+RecurrentGemma,https://www.kaggle.com/models/google/recurrentgemma
+Reka Flash 3,https://www.kaggle.com/models/reka-ai/reka-flash-3
+ResNetV1,https://www.kaggle.com/models/keras/resnetv1
+ResNetV1,https://www.kaggle.com/models/kerashub/resnetv1
+ResNetV2,https://www.kaggle.com/models/keras/resnetv2
+ResNetV2,https://www.kaggle.com/models/kerashub/resnetv2
+ResNetVD,https://www.kaggle.com/models/keras/resnet_vd
+ResNetVD,https://www.kaggle.com/models/kerashub/resnetvd
+RetinaNet,https://www.kaggle.com/models/keras/retinanet
+RetinaNet,https://www.kaggle.com/models/kerashub/retinanet
+RoBERTa,https://www.kaggle.com/models/keras/roberta
+S1-32B,https://www.kaggle.com/models/simplescaling/s1
+SAM,https://www.kaggle.com/models/keras/sam
+SAM,https://www.kaggle.com/models/kerashub/sam
+SegFormer,https://www.kaggle.com/models/keras/segformer
+SegFormer,https://www.kaggle.com/models/kerashub/segformer
+Segment Anything,https://www.kaggle.com/models/metaresearch/segment-anything
+Segment Anything 2,https://www.kaggle.com/models/metaresearch/segment-anything-2
+Segment Anything 2.1,https://www.kaggle.com/models/metaresearch/segment-anything-2.1
+ShieldGemma,https://www.kaggle.com/models/google/shieldgemma
+ShieldGemma 2,https://www.kaggle.com/models/google/shieldgemma-2
+SigLIP,https://www.kaggle.com/models/keras/siglip
+SigLIP,https://www.kaggle.com/models/kerashub/siglip
+Sparsh,https://www.kaggle.com/models/metaresearch/sparsh
+SpeciesNet,https://www.kaggle.com/models/google/speciesnet
+Stable Diffusion XL,https://www.kaggle.com/models/stabilityai/stable-diffusion-xl
+Stable Diffusion v2,https://www.kaggle.com/models/stabilityai/stable-diffusion-v2
+StableBeluga,https://www.kaggle.com/models/stabilityai/stable-beluga
+StableDiffusion 3.5,https://www.kaggle.com/models/keras/stablediffusion-3.5
+StableDiffusion3,https://www.kaggle.com/models/keras/stablediffusion3
+StableDiffusion3,https://www.kaggle.com/models/kerashub/stablediffusion3
+StableLM,https://www.kaggle.com/models/stabilityai/stablelm
+Step Audio,https://www.kaggle.com/models/stepfun/step-audio
+SurfPerch,https://www.kaggle.com/models/google/surfperch
+T5,https://www.kaggle.com/models/keras/t5
+T5 1.1,https://www.kaggle.com/models/kerashub/t5-1.1
+T5Gemma,https://www.kaggle.com/models/keras/t5-gemma
+T5Gemma,https://www.kaggle.com/models/google/t5gemma
+TimesFM,https://www.kaggle.com/models/googleai/timesfm
+TournamentPredictorModel,https://www.kaggle.com/models/andrometocs/tournamentpredictormodel
+TournamentPredictorModelMarch2025,https://www.kaggle.com/models/andrometocs/tournamentpredictormodelmarch2025
+TÜLU 2,https://www.kaggle.com/models/allenai/tulu-2
+TÜLU 3,https://www.kaggle.com/models/allenai/tulu-3
+Ultralytics YOLO11,https://www.kaggle.com/models/ultralytics/yolo11
+Ultralytics YOLO11-cls,https://www.kaggle.com/models/ultralytics/yolo11-cls
+Ultralytics YOLO11-obb,https://www.kaggle.com/models/ultralytics/yolo11-obb
+Ultralytics YOLO11-pose,https://www.kaggle.com/models/ultralytics/yolo11-pose
+Ultralytics YOLO11-seg,https://www.kaggle.com/models/ultralytics/yolo11-seg
+Ultralytics YOLOv5,https://www.kaggle.com/models/ultralytics/yolov5
+Ultralytics YOLOv8,https://www.kaggle.com/models/ultralytics/yolov8
+VGG,https://www.kaggle.com/models/keras/vgg
+VaultGemma,https://www.kaggle.com/models/google/vaultgemma
+VaultGemma,https://www.kaggle.com/models/keras/vaultgemma
+Vicuna,https://www.kaggle.com/models/keras/vicuna
+VitDet,https://www.kaggle.com/models/keras/vitdet
+Whisper,https://www.kaggle.com/models/keras/whisper
+Wiki-words,https://www.kaggle.com/models/google/wiki-words
+WorldPM,https://www.kaggle.com/models/qwen-lm/worldpm
+XLM-RoBERTa,https://www.kaggle.com/models/keras/xlm_roberta
+XTR,https://www.kaggle.com/models/deepmind/xtr
+Xception,https://www.kaggle.com/models/keras/xception
+YOLOV8,https://www.kaggle.com/models/keras/yolov8
+YOLOV8,https://www.kaggle.com/models/kerashub/yolov8
+YOLOv5,https://www.kaggle.com/models/kaggle/yolo-v5
+aiy,https://www.kaggle.com/models/google/aiy
+albert,https://www.kaggle.com/models/tensorflow/albert
+albert,https://www.kaggle.com/models/google/albert
+amoebanet,https://www.kaggle.com/models/google/amoebanet
+andro_insurance_premium_prediction_catboost_v1.pkl,https://www.kaggle.com/models/andrometocs/andro_insurance_premium_prediction_catboost_v1.pkl
+andro_konwinski_llm_model_readiness,https://www.kaggle.com/models/andrometocs/andro_konwinski_llm_model_readiness
+andro_konwinski_llm_model_readiness_offline,https://www.kaggle.com/models/andrometocs/andro_konwinski_llm_model_readiness_offline
+andro_lstm_rnn_deeplearning_model_v1,https://www.kaggle.com/models/andrometocs/andro_lstm_rnn_deeplearning_model_v1
+andro_wsdm_chatbot_pipeline,https://www.kaggle.com/models/andrometocs/andro_wsdm_chatbot_pipeline
+andrometocs_english_tamil_v1,https://www.kaggle.com/models/andrometocs/andrometocs_english_tamil_v1
+ar_portrait_depth,https://www.kaggle.com/models/tensorflow/ar-portrait-depth
+arabert,https://www.kaggle.com/models/kaggle/arabert
+arbitrary-image-stylization-v1,https://www.kaggle.com/models/google/arbitrary-image-stylization-v1
+autoseg-edgetpu,https://www.kaggle.com/models/google/autoseg-edgetpu
+aya,https://www.kaggle.com/models/cohereforai/aya
+bert,https://www.kaggle.com/models/tensorflow/bert
+bert,https://www.kaggle.com/models/google/bert
+bertseq2seq,https://www.kaggle.com/models/google/bertseq2seq
+bigbigan,https://www.kaggle.com/models/deepmind/bigbigan
+biggan,https://www.kaggle.com/models/deepmind/biggan
+bit,https://www.kaggle.com/models/google/bit
+blazeface,https://www.kaggle.com/models/tensorflow/blazeface
+blazepose,https://www.kaggle.com/models/mediapipe/blazepose
+blazepose_3d,https://www.kaggle.com/models/mediapipe/blazepose-3d
+bodypix,https://www.kaggle.com/models/tensorflow/bodypix
+boundless,https://www.kaggle.com/models/google/boundless
+c4ai-command-r-v01,https://www.kaggle.com/models/cohereforai/c4ai-command-r-v01
+centernet/hourglass,https://www.kaggle.com/models/tensorflow/centernet-hourglass
+centernet/resnet,https://www.kaggle.com/models/tensorflow/centernet-resnet
+circularnet,https://www.kaggle.com/models/google/circularnet
+compare_gan,https://www.kaggle.com/models/google/compare-gan
+cond-biggan,https://www.kaggle.com/models/vtab/cond-biggan
+cord-19/swivel-128d,https://www.kaggle.com/models/tensorflow/cord-19-swivel-128d
+cordia,https://www.kaggle.com/models/aicord/cordia
+covid-twitter-bert,https://www.kaggle.com/models/kaggle/covid-twitter-bert
+crac2024_zero_nodes_baseline,https://www.kaggle.com/models/ufal-mff/crac2024_zero_nodes_baseline
+crac2025_empty_nodes_baseline,https://www.kaggle.com/models/ufal-mff/crac2025_empty_nodes_baseline
+craft-text-detector,https://www.kaggle.com/models/kaggle/craft-text-detector
+cropnet,https://www.kaggle.com/models/google/cropnet
+dedal,https://www.kaggle.com/models/google/dedal
+deepcogito,https://www.kaggle.com/models/deep-cogito/deepcogito
+deeplab,https://www.kaggle.com/models/tensorflow/deeplab
+deeplab-edgetpu,https://www.kaggle.com/models/google/deeplab-edgetpu
+deeplabv3,https://www.kaggle.com/models/tensorflow/deeplabv3
+deepseekkagglecompetitionanalyst,https://www.kaggle.com/models/andrometocs/deepseekkagglecompetitionanalyst
+deepseektext2sqlpipeline,https://www.kaggle.com/models/andrometocs/deepseektext2sqlpipeline
+delf,https://www.kaggle.com/models/google/delf
+densenet,https://www.kaggle.com/models/tensorflow/densenet
+disease-classification,https://www.kaggle.com/models/agripredict/disease-classification
+efficientdet,https://www.kaggle.com/models/tensorflow/efficientdet
+efficientnet,https://www.kaggle.com/models/tensorflow/efficientnet
+efficientnet,https://www.kaggle.com/models/google/efficientnet
+efficientnet_v2,https://www.kaggle.com/models/google/efficientnet-v2
+electra,https://www.kaggle.com/models/google/electra
+elmo,https://www.kaggle.com/models/google/elmo
+enformer,https://www.kaggle.com/models/deepmind/enformer
+esrgan-tf2,https://www.kaggle.com/models/kaggle/esrgan-tf2
+euphonia_spice,https://www.kaggle.com/models/google/euphonia-spice
+exemplar,https://www.kaggle.com/models/vtab/exemplar
+experts/bert,https://www.kaggle.com/models/google/experts-bert
+experts/bit,https://www.kaggle.com/models/google/experts-bit
+face_detection,https://www.kaggle.com/models/mediapipe/face-detection
+face_landmarks_detection,https://www.kaggle.com/models/mediapipe/face-landmarks-detection
+facemesh,https://www.kaggle.com/models/mediapipe/facemesh
+fastdepth,https://www.kaggle.com/models/mediapipe/fastdepth
+faster_rcnn/inception_resnet_v2,https://www.kaggle.com/models/tensorflow/faster-rcnn-inception-resnet-v2
+faster_rcnn/inception_resnet_v2,https://www.kaggle.com/models/google/faster-rcnn-inception-resnet-v2
+faster_rcnn/resnet_v1,https://www.kaggle.com/models/tensorflow/faster-rcnn-resnet-v1
+fastspeech2,https://www.kaggle.com/models/kaggle/fastspeech2
+film,https://www.kaggle.com/models/google/film
+flan-t5,https://www.kaggle.com/models/google/flan-t5
+fungi_V1,https://www.kaggle.com/models/google/fungi-v1
+ganeval-cifar10-convnet,https://www.kaggle.com/models/deepmind/ganeval-cifar10-convnet
+gemma3productdocgenerative,https://www.kaggle.com/models/andrometocs/gemma3productdocgenerative
+gnews-swivel,https://www.kaggle.com/models/google/gnews-swivel
+gtr,https://www.kaggle.com/models/google/gtr
+handdetector,https://www.kaggle.com/models/mediapipe/handdetector
+handdetector,https://www.kaggle.com/models/tensorflow/handdetector
+handpose_3d,https://www.kaggle.com/models/mediapipe/handpose-3d
+handskeleton,https://www.kaggle.com/models/mediapipe/handskeleton
+handskeleton,https://www.kaggle.com/models/tensorflow/handskeleton
+hifi-gan,https://www.kaggle.com/models/kaggle/hifi-gan
+hrnet,https://www.kaggle.com/models/google/hrnet
+humpback_whale,https://www.kaggle.com/models/google/humpback-whale
+i3d-kinetics,https://www.kaggle.com/models/deepmind/i3d-kinetics
+image_augmentation,https://www.kaggle.com/models/google/image-augmentation
+imet_attributes_V1,https://www.kaggle.com/models/metmuseum/imet-attributes-v1
+inception,https://www.kaggle.com/models/tensorflow/inception
+inception_resnet_v2,https://www.kaggle.com/models/google/inception-resnet-v2
+inception_resnet_v2,https://www.kaggle.com/models/tensorflow/inception-resnet-v2
+inception_v1,https://www.kaggle.com/models/google/inception-v1
+inception_v2,https://www.kaggle.com/models/google/inception-v2
+inception_v3,https://www.kaggle.com/models/google/inception-v3
+inflight model,https://www.kaggle.com/models/kaggle-model-test/inflight-model
+instruct-pix2pix,https://www.kaggle.com/models/timothy-brooks/instruct-pix2pix
+iris,https://www.kaggle.com/models/mediapipe/iris
+jigsaw,https://www.kaggle.com/models/vtab/jigsaw
+keras-ocr,https://www.kaggle.com/models/kaggle/keras-ocr
+kids-cgan,https://www.kaggle.com/models/kaggle/kids-cgan
+lambert,https://www.kaggle.com/models/tensorflow/lambert
+landmarks,https://www.kaggle.com/models/google/landmarks
+llama-3.1-guard,https://www.kaggle.com/models/metaresearch/llama-3.1-guard
+llama-3.1-prompt-guard,https://www.kaggle.com/models/metaresearch/llama-3.1-prompt-guard
+llr-pretrain-adv,https://www.kaggle.com/models/deepmind/llr-pretrain-adv
+local-linearity,https://www.kaggle.com/models/deepmind/local-linearity
+logit_reconstruction,https://www.kaggle.com/models/google/logit-reconstruction
+mask_rcnn/inception_resnet_v2,https://www.kaggle.com/models/tensorflow/mask-rcnn-inception-resnet-v2
+maxim,https://www.kaggle.com/models/kaggle/maxim
+melgan,https://www.kaggle.com/models/kaggle/melgan
+midas,https://www.kaggle.com/models/intel/midas
+mil-nce,https://www.kaggle.com/models/deepmind/mil-nce
+mirnet,https://www.kaggle.com/models/kaggle/mirnet
+mmt,https://www.kaggle.com/models/deepmind/mmt
+mmv,https://www.kaggle.com/models/deepmind/mmv
+mnasnet,https://www.kaggle.com/models/tensorflow/mnasnet
+mnist,https://www.kaggle.com/models/tensorflow/mnist
+mobile_food_segmenter_V1,https://www.kaggle.com/models/google/mobile-food-segmenter-v1
+mobile_object_labeler_v1,https://www.kaggle.com/models/google/mobile-object-labeler-v1
+mobile_object_localizer_v1,https://www.kaggle.com/models/google/mobile-object-localizer-v1
+mobilebert,https://www.kaggle.com/models/google/mobilebert
+mobilebert,https://www.kaggle.com/models/tensorflow/mobilebert
+mobilebert,https://www.kaggle.com/models/iree/mobilebert
+mobilebert-edgetpu,https://www.kaggle.com/models/google/mobilebert-edgetpu
+mobilenet-edgetpu-v2,https://www.kaggle.com/models/google/mobilenet-edgetpu-v2
+mobilenet_v1,https://www.kaggle.com/models/tensorflow/mobilenet-v1
+mobilenet_v1,https://www.kaggle.com/models/google/mobilenet-v1
+mobilenet_v1,https://www.kaggle.com/models/iree/mobilenet-v1
+mobilenet_v2,https://www.kaggle.com/models/google/mobilenet-v2
+mobilenet_v2,https://www.kaggle.com/models/tensorflow/mobilenet-v2
+mobilenet_v2,https://www.kaggle.com/models/iree/mobilenet-v2
+mobilenet_v3,https://www.kaggle.com/models/google/mobilenet-v3
+mobilenet_v3,https://www.kaggle.com/models/iree/mobilenet-v3
+mobilevit,https://www.kaggle.com/models/kaggle/mobilevit
+mosaic,https://www.kaggle.com/models/google/mosaic
+movenet,https://www.kaggle.com/models/google/movenet
+movinet,https://www.kaggle.com/models/google/movinet
+multispecies-whale,https://www.kaggle.com/models/google/multispecies-whale
+mushroom-identification_v1,https://www.kaggle.com/models/kaggle/mushroom-identification-v1
+musiq,https://www.kaggle.com/models/google/musiq
+nasnet,https://www.kaggle.com/models/google/nasnet
+nasnet,https://www.kaggle.com/models/tensorflow/nasnet
+nnlm,https://www.kaggle.com/models/google/nnlm
+nonsemantic-speech-benchmark,https://www.kaggle.com/models/google/nonsemantic-speech-benchmark
+nq,https://www.kaggle.com/models/kaggle/nq
+open_llama,https://www.kaggle.com/models/openlmresearch/open-llama
+parallel-wavegan,https://www.kaggle.com/models/kaggle/parallel-wavegan
+planet_v2,https://www.kaggle.com/models/google/planet-v2
+pnasnet,https://www.kaggle.com/models/google/pnasnet
+popular_us_products_V1,https://www.kaggle.com/models/google/popular-us-products-v1
+popular_wine_V1,https://www.kaggle.com/models/google/popular-wine-v1
+posenet/mobilenet,https://www.kaggle.com/models/tensorflow/posenet-mobilenet
+posenet/resnet50,https://www.kaggle.com/models/tensorflow/posenet-resnet50
+progan-128,https://www.kaggle.com/models/google/progan-128
+random-nnlm-en,https://www.kaggle.com/models/google/random-nnlm-en
+relative-patch-location,https://www.kaggle.com/models/vtab/relative-patch-location
+resnet50,https://www.kaggle.com/models/google/resnet50
+resnet_50,https://www.kaggle.com/models/tensorflow/resnet-50
+resnet_v1,https://www.kaggle.com/models/google/resnet-v1
+resnet_v2,https://www.kaggle.com/models/google/resnet-v2
+resnet_v2,https://www.kaggle.com/models/tensorflow/resnet-v2
+retinanet/resnet,https://www.kaggle.com/models/tensorflow/retinanet-resnet
+roberta,https://www.kaggle.com/models/kaggle/roberta
+rosetta,https://www.kaggle.com/models/kaggle/rosetta
+rotation,https://www.kaggle.com/models/vtab/rotation
+selfie_segmentation,https://www.kaggle.com/models/mediapipe/selfie-segmentation
+semi-exemplar-10,https://www.kaggle.com/models/vtab/semi-exemplar-10
+semi-rotation-10,https://www.kaggle.com/models/vtab/semi-rotation-10
+sentence-t5,https://www.kaggle.com/models/google/sentence-t5
+smaller_LaBSE_15lang,https://www.kaggle.com/models/kaggle/smaller-labse-15lang
+smartreply,https://www.kaggle.com/models/tensorflow/smartreply
+soundstream,https://www.kaggle.com/models/google/soundstream
+spam-detection,https://www.kaggle.com/models/tensorflow/spam-detection
+speech-commands,https://www.kaggle.com/models/tensorflow/speech-commands
+speech_embedding,https://www.kaggle.com/models/google/speech-embedding
+spice,https://www.kaggle.com/models/google/spice
+spiral,https://www.kaggle.com/models/deepmind/spiral
+squeezenet,https://www.kaggle.com/models/tensorflow/squeezenet
+ssd_mobilenet_v1,https://www.kaggle.com/models/tensorflow/ssd-mobilenet-v1
+ssd_mobilenet_v1,https://www.kaggle.com/models/iree/ssd-mobilenet-v1
+ssd_mobilenet_v2,https://www.kaggle.com/models/tensorflow/ssd-mobilenet-v2
+ssd_mobilenet_v2,https://www.kaggle.com/models/iree/ssd-mobilenet-v2
+ssd_spaghettinet_edgetpu,https://www.kaggle.com/models/iree/ssd-spaghettinet-edgetpu
+ssdlite_mobilenet_v2,https://www.kaggle.com/models/tensorflow/ssdlite-mobilenet-v2
+starcoder2,https://www.kaggle.com/models/bigcode-project/starcoder2
+sup-100,https://www.kaggle.com/models/vtab/sup-100
+sup-exemplar-100,https://www.kaggle.com/models/vtab/sup-exemplar-100
+sup-rotation-100,https://www.kaggle.com/models/vtab/sup-rotation-100
+talkheads_ggelu_bert_en,https://www.kaggle.com/models/tensorflow/talkheads-ggelu-bert-en
+tf2nq,https://www.kaggle.com/models/kaggle/tf2nq
+tiny_video_net,https://www.kaggle.com/models/google/tiny-video-net
+tn_bert,https://www.kaggle.com/models/google/tn-bert
+tournamentmarch2025prediction,https://www.kaggle.com/models/andrometocs/tournamentmarch2025prediction
+toxicity,https://www.kaggle.com/models/tensorflow/toxicity
+trillsson,https://www.kaggle.com/models/google/trillsson
+tweening_conv3d,https://www.kaggle.com/models/google/tweening-conv3d
+udot_scann,https://www.kaggle.com/models/universaldot/udot-scann
+ulmfit,https://www.kaggle.com/models/edrone/ulmfit
+uncond-biggan,https://www.kaggle.com/models/vtab/uncond-biggan
+universal-sentence-encoder,https://www.kaggle.com/models/google/universal-sentence-encoder
+universal-sentence-encoder,https://www.kaggle.com/models/tensorflow/universal-sentence-encoder
+universal-sentence-encoder-qa-ondevice,https://www.kaggle.com/models/google/universal-sentence-encoder-qa-ondevice
+vae,https://www.kaggle.com/models/vtab/vae
+vggish,https://www.kaggle.com/models/google/vggish
+vicuna,https://www.kaggle.com/models/lmsysorg/vicuna
+video_swin_transformer,https://www.kaggle.com/models/kaggle/video-swin-transformer
+videoflow,https://www.kaggle.com/models/google/videoflow
+vila,https://www.kaggle.com/models/google/vila
+vit,https://www.kaggle.com/models/keras/vit
+wae-gan,https://www.kaggle.com/models/vtab/wae-gan
+wae-mmd,https://www.kaggle.com/models/vtab/wae-mmd
+wae-ukl,https://www.kaggle.com/models/vtab/wae-ukl
+wav2vec2,https://www.kaggle.com/models/kaggle/wav2vec2
+wiki40b-lm,https://www.kaggle.com/models/google/wiki40b-lm
+word2vec_swahili,https://www.kaggle.com/models/kaggle/word2vec-swahili
+wrn_106,https://www.kaggle.com/models/deepmind/wrn-106
+wsdmandrotdiflogregpipeline_v1,https://www.kaggle.com/models/andrometocs/wsdmandrotdiflogregpipeline_v1
+xlm_roberta,https://www.kaggle.com/models/kaggle/xlm-roberta
+yamnet,https://www.kaggle.com/models/google/yamnet
+zh_segmentation,https://www.kaggle.com/models/google/zh-segmentation
