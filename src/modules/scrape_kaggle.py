@@ -52,56 +52,89 @@ def scrape_kaggle_models(url: str) -> List[Dict[str, str]]:
         # Give extra time for all elements to render
         time.sleep(3)
 
-        # Get page source and parse with lxml
-        page_source = driver.page_source
-        tree = html.fromstring(page_source)
+        current_page = 1
+        max_pages = 50  # Safety limit to prevent infinite loops
 
-        # XPath pattern based on provided full XPath
-        # Full XPath: /html/body/div/div[1]/div[2]/div/div[6]/div/div/div/ul/li[1]/div/a
-        # Flexible version to get all list items
-        list_items = tree.xpath('//ul/li/div/a[contains(@href, "/models/")]')
+        while current_page <= max_pages:
+            print(f"\nScraping page {current_page}...")
 
-        print(f"Found {len(list_items)} model links")
+            # Get page source and parse with lxml
+            page_source = driver.page_source
+            tree = html.fromstring(page_source)
 
-        for link in list_items:
-            # Get the href (kaggle_url)
-            href = link.get('href', '')
+            # XPath pattern based on provided full XPath
+            # Full XPath: /html/body/div/div[1]/div[2]/div/div[6]/div/div/div/ul/li[1]/div/a
+            # Flexible version to get all list items
+            list_items = tree.xpath('//ul/li/div/a[contains(@href, "/models/")]')
 
-            if not href or href == '/models':
-                continue
+            print(f"Found {len(list_items)} model links on page {current_page}")
 
-            # Get the model name using the relative XPath from the link element
-            # Full XPath for name: /html/body/div/div[1]/div[2]/div/div[6]/div/div/div/ul/li[1]/div/a/div/div[2]/div
-            # Relative to the <a> tag: ./div/div[2]/div
-            name_elements = link.xpath('.//div/div[2]/div/text()')
+            for link in list_items:
+                # Get the href (kaggle_url)
+                href = link.get('href', '')
 
-            if name_elements:
-                model_name = name_elements[0].strip()
-            else:
-                # Fallback: try to get any text from the link
-                model_name = link.text_content().strip()
-                if not model_name:
-                    # Extract from URL as last resort
-                    parts = href.strip('/').split('/')
-                    if len(parts) >= 2:
-                        model_name = parts[-1].replace('-', ' ').title()
-                    else:
-                        continue
+                if not href or href == '/models':
+                    continue
 
-            # Build full URL
-            full_url = f"https://www.kaggle.com{href}" if href.startswith('/') else href
+                # Get the model name using the relative XPath from the link element
+                # Full XPath for name: /html/body/div/div[1]/div[2]/div/div[6]/div/div/div/ul/li[1]/div/a/div/div[2]/div
+                # Relative to the <a> tag: ./div/div[2]/div
+                name_elements = link.xpath('.//div/div[2]/div/text()')
 
-            # Avoid duplicates
-            if not any(m['kaggle_url'] == full_url for m in models):
-                models.append({
-                    'name': model_name,
-                    'kaggle_url': full_url
-                })
-                print(f"Found: {model_name}")
+                if name_elements:
+                    model_name = name_elements[0].strip()
+                else:
+                    # Fallback: try to get any text from the link
+                    model_name = link.text_content().strip()
+                    if not model_name:
+                        # Extract from URL as last resort
+                        parts = href.strip('/').split('/')
+                        if len(parts) >= 2:
+                            model_name = parts[-1].replace('-', ' ').title()
+                        else:
+                            continue
+
+                # Build full URL
+                full_url = f"https://www.kaggle.com{href}" if href.startswith('/') else href
+
+                # Avoid duplicates
+                if not any(m['kaggle_url'] == full_url for m in models):
+                    models.append({
+                        'name': model_name,
+                        'kaggle_url': full_url
+                    })
+                    print(f"Found: {model_name}")
+
+            # Try to find and click the next page button
+            try:
+                next_page = current_page + 1
+                # Look for the next page button using the pattern from your HTML
+                next_button = driver.find_element(
+                    By.XPATH,
+                    f'//button[contains(@class, "MuiPaginationItem-page") and @aria-label="Go to page {next_page}"]'
+                )
+
+                if next_button and next_button.is_enabled():
+                    print(f"Clicking to page {next_page}...")
+                    driver.execute_script("arguments[0].scrollIntoView(true);", next_button)
+                    time.sleep(1)
+                    next_button.click()
+
+                    # Wait for new content to load
+                    time.sleep(3)
+                    current_page = next_page
+                else:
+                    print("No more pages available")
+                    break
+            except Exception as e:
+                print(f"No more pages or error finding next button: {e}")
+                break
 
         # If no models found, try a broader XPath
         if not models:
             print("No models found with primary XPath, trying broader search...")
+            page_source = driver.page_source
+            tree = html.fromstring(page_source)
             all_model_links = tree.xpath('//a[contains(@href, "/models/")]')
 
             for link in all_model_links:
