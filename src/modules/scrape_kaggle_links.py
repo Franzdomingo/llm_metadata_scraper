@@ -352,7 +352,7 @@ def main():
 
     # Configuration
     url = "https://www.kaggle.com/models?owner-type=organization"
-    output_file = "output/kaggle_output_parallel.csv"
+    output_file = "output/kaggle_output.csv"
     num_workers = 16
 
     print("=" * 60)
