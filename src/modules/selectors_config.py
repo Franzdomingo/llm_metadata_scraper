@@ -37,6 +37,14 @@ class KaggleSelectors:
     
     # Individual tag link selector
     TAG_LINK_SELECTOR: str = 'a.sc-hZpmlk.kpuQUO'
+    # Model card selectors (CSS) - ordered by priority
+    MODEL_CARD_SELECTORS: List[str] = [
+        'div.sc-lkCrJH:nth-child(1)',
+        '.sc-chzmIZ > div:nth-child(1)'
+    ]
+
+    # Optional action button to reveal model card (click before scraping)
+    MODEL_CARD_ACTION_BUTTON: str = '.sc-kHBIib > span:nth-child(2)'
     
     # Fallback CSS selector for description (used with Selenium)
     DESCRIPTION_CSS_FALLBACK: str = '.sc-fhfEft > p:nth-child(2)'
@@ -78,6 +86,8 @@ def get_selectors_for_site(site: str) -> Dict:
             'description': KaggleSelectors.DESCRIPTION_SELECTORS,
             'downloads': KaggleSelectors.DOWNLOAD_SELECTORS,
             'description_css_fallback': KaggleSelectors.DESCRIPTION_CSS_FALLBACK,
+            'model_card_selectors': KaggleSelectors.MODEL_CARD_SELECTORS,
+            'model_card_action': KaggleSelectors.MODEL_CARD_ACTION_BUTTON,
             'tags': KaggleSelectors.TAG_SELECTORS,
             'tag_links': KaggleSelectors.TAG_LINK_SELECTOR
         },

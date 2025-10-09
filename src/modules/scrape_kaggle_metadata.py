@@ -31,6 +31,7 @@ import re
 from typing import List, Dict, Optional
 import logging
 import random
+import json
 
 # Import selectors configuration
 try:
@@ -77,7 +78,8 @@ def scrape_model_metadata(driver: webdriver.Chrome, url: str, name: str) -> Dict
         'kaggle_url': url,
         'short_description': '',
         'downloads': '',
-        'tags': ''
+        'tags': '',
+        'model_card': ''
     }
 
     try:
@@ -108,6 +110,17 @@ def scrape_model_metadata(driver: webdriver.Chrome, url: str, name: str) -> Dict
         # Extract downloads using configured selectors
         metadata['downloads'] = _extract_downloads(tree, selectors, name)
 
+        # Extract model_card using configured selectors (may require clicking an action button)
+        try:
+            model_card_result = _extract_model_card(driver, tree, selectors, name)
+            mc_text = model_card_result.get('text', '') or ''
+            links = model_card_result.get('links', []) or []
+            if links:
+                mc_text = mc_text + '\n\nLinks:\n' + '\n'.join([f"- {l}" for l in links])
+            metadata['model_card'] = mc_text
+        except Exception as e:
+            logging.debug(f"Error extracting model_card for {name}: {e}")
+
         logging.info(f" {name}: desc='{metadata['short_description'][:50]}...', downloads={metadata['downloads']}")
         # Extract tags using configured selectors (was missing)
         metadata['tags'] = _extract_tags(driver, tree, selectors, name)
@@ -137,30 +150,68 @@ def _extract_description(driver: webdriver.Chrome, tree, selectors: Dict, name: 
         Extracted description text or empty string
     """
     description = ""
-    
-    # Try XPath selectors first
+
+    # First try CSS selectors (via Selenium) - these are more reliable for dynamic content
     for selector in selectors.get('description', []):
-        # Skip CSS selector (it's handled separately)
-        if selector.startswith('.sc-'):
+        if selector.startswith('.') or selector.startswith('#'):
+            try:
+                logging.debug(f"Trying description CSS selector via Selenium: {selector}")
+                desc_element = driver.find_element(By.CSS_SELECTOR, selector)
+                # Return outerHTML so the caller can inspect formatting if needed
+                outer = desc_element.get_attribute('outerHTML')
+                if outer and outer.strip():
+                    logging.info(f"Found short_description (outerHTML) using CSS selector: {selector}")
+                    # convert HTML to cleaned plain text before returning
+                    return _html_to_text(outer)
+            except Exception as e:
+                logging.debug(f"Description CSS selector {selector} not found via Selenium: {e}")
+
+    # Next try XPath selectors using lxml tree
+    for selector in selectors.get('description', []):
+        # Skip CSS selectors here
+        if selector.startswith('.') or selector.startswith('#'):
             continue
-            
         try:
+            logging.debug(f"Trying description XPath selector: {selector}")
             desc_elements = tree.xpath(selector)
             if desc_elements and desc_elements[0].text_content().strip():
-                description = desc_elements[0].text_content().strip()
-                break
-        except Exception:
-            continue
+                logging.info(f"Found short_description using XPath selector: {selector}")
+                return desc_elements[0].text_content().strip()
+        except Exception as e:
+            logging.debug(f"Description XPath selector {selector} failed: {e}")
 
-    # If still not found, try CSS selector approach through Selenium
-    if not description and 'description_css_fallback' in selectors:
+    # Final fallback: use configured CSS fallback (Selenium) and return outerHTML
+    if 'description_css_fallback' in selectors:
         try:
             desc_element = driver.find_element(By.CSS_SELECTOR, selectors['description_css_fallback'])
-            description = desc_element.text.strip()
+            outer = desc_element.get_attribute('outerHTML')
+            if outer and outer.strip():
+                logging.info(f"Found short_description (outerHTML) using fallback CSS selector")
+                return _html_to_text(outer)
         except Exception:
             logging.warning(f"Could not find short_description for {name}")
-    
+
     return description
+
+
+def _html_to_text(html_snippet: str) -> str:
+    """Convert an HTML snippet (outerHTML) into cleaned plain text.
+
+    Uses lxml to parse and extract text_content(), then collapses whitespace.
+    """
+    if not html_snippet:
+        return ''
+
+    try:
+        node = html.fromstring(html_snippet)
+        text = node.text_content() or ''
+    except Exception:
+        # Fallback: remove tags with a simple regex
+        text = re.sub(r'<[^>]+>', ' ', html_snippet)
+
+    # Collapse whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
 
 
 def _extract_downloads(tree, selectors: Dict, name: str) -> str:
@@ -333,6 +384,96 @@ def _extract_tags(driver: webdriver.Chrome, tree, selectors: Dict, name: str) ->
     return ', '.join(tags) if tags else ''
 
 
+def _extract_model_card(driver: webdriver.Chrome, tree, selectors: Dict, name: str) -> Dict[str, object]:
+    """
+    Extract the model_card text and links. Attempts to click a configured action button
+    before extraction to reveal hidden content.
+
+    Returns a dict with keys: 'text' (str) and 'links' (List[str])
+    """
+    result = {'text': '', 'links': []}
+
+    # Attempt to click an action button if configured
+    action_selector = selectors.get('model_card_action')
+    if action_selector:
+        try:
+            logging.debug(f"Attempting to click model_card action: {action_selector}")
+            try:
+                wait = WebDriverWait(driver, 6)
+                btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, action_selector)))
+                btn.click()
+                logging.debug("Clicked model_card action via Selenium click")
+                time.sleep(1)
+            except Exception as e_click:
+                logging.debug(f"Selenium click failed ({e_click}), trying JS click")
+                try:
+                    btn = driver.find_element(By.CSS_SELECTOR, action_selector)
+                    driver.execute_script("arguments[0].click();", btn)
+                    logging.debug("Clicked model_card action via JS")
+                    time.sleep(1)
+                except Exception as e_js:
+                    logging.debug(f"JS click failed: {e_js}")
+        except Exception as e:
+            logging.debug(f"Action click attempt error: {e}")
+
+    # Refresh tree after any click
+    page_source = driver.page_source
+    tree = html.fromstring(page_source)
+
+    # Try CSS selectors via Selenium first
+    for sel in selectors.get('model_card_selectors', []):
+        try:
+            logging.debug(f"Trying model_card CSS selector via Selenium: {sel}")
+            el = driver.find_element(By.CSS_SELECTOR, sel)
+            text = el.text.strip()
+            if text:
+                result['text'] = text
+                # extract anchor hrefs
+                try:
+                    anchors = el.find_elements(By.TAG_NAME, 'a')
+                    for a in anchors:
+                        href = a.get_attribute('href')
+                        if href:
+                            result['links'].append(href)
+                except Exception:
+                    logging.debug('No anchors found via Selenium in model_card element')
+
+                logging.info(f"Found model_card using Selenium selector: {sel}")
+                return result
+        except Exception as e:
+            logging.debug(f"model_card CSS selector {sel} not found via Selenium: {e}")
+
+    # Fallback to XPath using lxml
+    fallback_xpaths = [
+        '//div[contains(@class, "sc-lkCrJH")][1]',
+        '//div[contains(@class, "sc-chzmIZ")]/div[1]'
+    ]
+
+    for xp in fallback_xpaths:
+        try:
+            elems = tree.xpath(xp)
+            if elems:
+                text = elems[0].text_content().strip()
+                if text:
+                    result['text'] = text
+                    try:
+                        anchor_nodes = elems[0].xpath('.//a')
+                        for node in anchor_nodes:
+                            href = node.get('href')
+                            if href:
+                                result['links'].append(href)
+                    except Exception:
+                        logging.debug('No anchors found via lxml in model_card element')
+
+                    logging.info(f"Found model_card using XPath fallback: {xp}")
+                    return result
+        except Exception as e:
+            logging.debug(f"XPath {xp} failed: {e}")
+
+    logging.warning(f"Could not find model_card for {name}")
+    return result
+
+
 def read_kaggle_input(input_file: str) -> List[Dict[str, str]]:
     """
     Read the kaggle_output.csv file
@@ -367,14 +508,42 @@ def save_to_csv(metadata_list: List[Dict[str, str]], output_file: str):
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
     with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['name', 'kaggle_url', 'short_description', 'downloads', 'tags']
+        fieldnames = ['name', 'kaggle_url', 'short_description', 'downloads', 'tags', 'model_card']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         writer.writeheader()
         for metadata in metadata_list:
+            # Clean model_card to avoid embedded newlines or excessive whitespace that
+            # can make the CSV hard to read in some tools. We keep content but collapse
+            # whitespace to single spaces and strip leading/trailing whitespace.
+            if metadata.get('model_card'):
+                metadata['model_card'] = _clean_model_card(metadata['model_card'])
             writer.writerow(metadata)
 
     logging.info(f"Saved {len(metadata_list)} model metadata to {output_file}")
+
+
+def _clean_model_card(text: str) -> str:
+    """Sanitize the model_card text for CSV storage.
+
+    - Removes control characters and null bytes
+    - Replaces runs of whitespace (including newlines) with a single space
+    - Strips leading/trailing whitespace
+    - Keeps links and punctuation but puts everything on a single line to avoid CSV layout issues
+    """
+    if not text:
+        return ''
+
+    # Remove null bytes and other control characters except basic punctuation
+    cleaned = text.replace('\x00', ' ')
+
+    # Collapse all whitespace (spaces, tabs, newlines) to single space
+    cleaned = re.sub(r"\s+", ' ', cleaned)
+
+    # Trim
+    cleaned = cleaned.strip()
+
+    return cleaned
 
 def main():
     """Main function to run the metadata scraper"""
