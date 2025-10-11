@@ -545,53 +545,25 @@ def scrape_models(driver: webdriver.Chrome, models: List[Dict[str, str]], select
 
     return results
 
-def save_to_csv(metadata_list: List[Dict[str, str]], output_file: str):
+
+def save_to_json(metadata_list: List[Dict[str, str]], output_file: str):
     """
-    Save scraped metadata to CSV file
+    Save scraped metadata to JSON file
 
     Args:
         metadata_list: List of metadata dictionaries
-        output_file: Path to output CSV file
+        output_file: Path to output JSON file
     """
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
-    with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['name', 'kaggle_url', 'short_description', 'downloads', 'tags', 'model_card']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    # Write pretty-printed JSON with UTF-8 encoding
+    with open(output_file, 'w', encoding='utf-8') as jf:
+        json.dump(metadata_list, jf, ensure_ascii=False, indent=2)
 
-        writer.writeheader()
-        for metadata in metadata_list:
-            # Clean model_card to avoid embedded newlines or excessive whitespace that
-            # can make the CSV hard to read in some tools. We keep content but collapse
-            # whitespace to single spaces and strip leading/trailing whitespace.
-            if metadata.get('model_card'):
-                metadata['model_card'] = _clean_model_card(metadata['model_card'])
-            writer.writerow(metadata)
-
-    logging.info(f"Saved {len(metadata_list)} model metadata to {output_file}")
+    logging.info(f"Saved {len(metadata_list)} model metadata to {output_file} (JSON)")
 
 
-def _clean_model_card(text: str) -> str:
-    """Sanitize the model_card text for CSV storage.
-
-    - Removes control characters and null bytes
-    - Replaces runs of whitespace (including newlines) with a single space
-    - Strips leading/trailing whitespace
-    - Keeps links and punctuation but puts everything on a single line to avoid CSV layout issues
-    """
-    if not text:
-        return ''
-
-    # Remove null bytes and other control characters except basic punctuation
-    cleaned = text.replace('\x00', ' ')
-
-    # Collapse all whitespace (spaces, tabs, newlines) to single space
-    cleaned = re.sub(r"\s+", ' ', cleaned)
-
-    # Trim
-    cleaned = cleaned.strip()
-
-    return cleaned
+# CSV output removed — script now saves JSON only
 
 def main():
     """Main function to run the metadata scraper"""
@@ -617,9 +589,11 @@ def main():
     if input_file:
         input_dir = os.path.dirname(input_file)
         output_file = os.path.join(input_dir, "kaggle_metadata.csv")
+        output_json = os.path.join(input_dir, "kaggle_metadata.json")
     else:
         # Default fallback
         output_file = "output/kaggle_metadata.csv"
+        output_json = "output/kaggle_metadata.json"
 
     print("=" * 60)
     print("Kaggle Metadata Scraper")
@@ -653,8 +627,8 @@ def main():
 
     elapsed_time = time.time() - start_time
 
-    # Save results
-    save_to_csv(metadata_list, output_file)
+    # Save results as JSON only
+    save_to_json(metadata_list, output_json)
 
     # Display summary
     print("\n" + "=" * 60)
@@ -671,7 +645,7 @@ def main():
         print(f"  Downloads: {metadata['downloads']}")
         print(f"  Tags: {metadata['tags']}")
 
-    print(f"\nFull results saved to: {output_file}")
+    print(f"\nFull results (JSON) saved to: {output_json}")
 
 if __name__ == "__main__":
     main()
