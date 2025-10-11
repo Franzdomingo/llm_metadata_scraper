@@ -48,20 +48,47 @@ logging.basicConfig(
 )
 
 def create_driver() -> webdriver.Chrome:
-    """Create and configure a Chrome driver instance"""
+    """Create and configure a Chrome driver instance.
+
+    This is kept intentionally simple so callers can create a driver once
+    and reuse it across multiple scraping operations.
+    """
     chrome_options = Options()
+    # default to headless; callers can modify this function if they need
     chrome_options.add_argument('--headless')
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--disable-blink-features=AutomationControlled')
-    
-    # Use random user agent from configuration
-    user_agent = random.choice(GeneralSelectors.USER_AGENTS)
-    chrome_options.add_argument(f'user-agent={user_agent}')
+
+    # Use random user agent from configuration if available
+    try:
+        user_agent = random.choice(GeneralSelectors.USER_AGENTS)
+        chrome_options.add_argument(f'user-agent={user_agent}')
+    except Exception:
+        logging.debug('No user agents configured, using default browser UA')
 
     return webdriver.Chrome(options=chrome_options)
 
-def scrape_model_metadata(driver: webdriver.Chrome, url: str, name: str) -> Dict[str, str]:
+
+def fetch_page(driver: webdriver.Chrome, url: str, wait_seconds: float = 3.0) -> str:
+    """Load a page with Selenium and return the page source.
+
+    Keeps the wait logic in one place so callers can control timings
+    and helps with reuse in other workflows.
+    """
+    driver.get(url)
+    # Small sleep here to allow dynamic content to settle. Tests calling
+    # this function can change or mock wait_seconds as needed.
+    time.sleep(wait_seconds)
+    return driver.page_source
+
+
+def parse_tree_from_driver(driver: webdriver.Chrome) -> html.HtmlElement:
+    """Create and return an lxml tree from the driver's current page source."""
+    page_source = driver.page_source
+    return html.fromstring(page_source)
+
+def scrape_model_metadata(driver: webdriver.Chrome, url: str, name: str, selectors: Optional[Dict] = None) -> Dict[str, str]:
     """
     Scrape metadata from a single Kaggle model page
 
@@ -84,25 +111,22 @@ def scrape_model_metadata(driver: webdriver.Chrome, url: str, name: str) -> Dict
 
     try:
         logging.info(f"Scraping: {name}")
-        driver.get(url)
 
-        # Wait for page to load
-        wait = WebDriverWait(driver, 20)
-        time.sleep(3)  # Additional wait for dynamic content
-        
-        # Wait specifically for tags section to load
+        # Load page and parse tree
+        fetch_page(driver, url, wait_seconds=3.0)
+        # Give a small extra wait for sections to render and for clickable elements
         try:
+            wait = WebDriverWait(driver, 10)
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "h2")))
-            time.sleep(2)  # Extra wait for tags to render
-        except:
-            logging.debug("Could not wait for tags section, continuing anyway")
+            time.sleep(1)
+        except Exception:
+            logging.debug("h2 not found or waiting timed out; continuing")
 
-        # Get page source
-        page_source = driver.page_source
-        tree = html.fromstring(page_source)
+        tree = parse_tree_from_driver(driver)
 
-        # Get selectors configuration
-        selectors = get_selectors_for_site('kaggle')
+        # Allow caller to supply selectors for reusability in tests or other sites
+        if selectors is None:
+            selectors = get_selectors_for_site('kaggle')
 
         # Extract short_description using configured selectors
         metadata['short_description'] = _extract_description(driver, tree, selectors, name)
@@ -121,8 +145,7 @@ def scrape_model_metadata(driver: webdriver.Chrome, url: str, name: str) -> Dict
         except Exception as e:
             logging.debug(f"Error extracting model_card for {name}: {e}")
 
-        logging.info(f" {name}: desc='{metadata['short_description'][:50]}...', downloads={metadata['downloads']}")
-        # Extract tags using configured selectors (was missing)
+        # Extract tags using configured selectors
         metadata['tags'] = _extract_tags(driver, tree, selectors, name)
 
         # Create more detailed logging
@@ -497,6 +520,31 @@ def read_kaggle_input(input_file: str) -> List[Dict[str, str]]:
     logging.info(f"Loaded {len(models)} models from {input_file}")
     return models
 
+
+def scrape_models(driver: webdriver.Chrome, models: List[Dict[str, str]], selectors: Optional[Dict] = None, delay: float = 1.0) -> List[Dict[str, str]]:
+    """Scrape a list of models using a shared Selenium driver.
+
+    Args:
+        driver: Selenium webdriver instance to reuse across requests
+        models: List of dicts with keys 'name' and 'kaggle_url'
+        selectors: Optional selectors mapping to pass to each scrape
+        delay: Seconds to wait between scraping each model
+
+    Returns:
+        List of metadata dictionaries
+    """
+    results = []
+
+    for i, model in enumerate(models, 1):
+        name = model.get('name')
+        url = model.get('kaggle_url')
+        logging.info(f"Processing {i}/{len(models)}: {name}")
+        metadata = scrape_model_metadata(driver, url, name, selectors=selectors)
+        results.append(metadata)
+        time.sleep(delay)
+
+    return results
+
 def save_to_csv(metadata_list: List[Dict[str, str]], output_file: str):
     """
     Save scraped metadata to CSV file
@@ -596,20 +644,10 @@ def main():
 
     print(f"\nScraping metadata for {len(models)} models...")
 
-    # Create driver
+    # Create driver and run batch scraping (re-usable entry point)
     driver = create_driver()
-    metadata_list = []
-
     try:
-        for i, model in enumerate(models, 1):
-            print(f"\n[{i}/{len(models)}] Processing: {model['name']}")
-
-            metadata = scrape_model_metadata(driver, model['kaggle_url'], model['name'])
-            metadata_list.append(metadata)
-
-            # Small delay between requests to be respectful
-            time.sleep(1)
-
+        metadata_list = scrape_models(driver, models, selectors=None, delay=1.0)
     finally:
         driver.quit()
 
