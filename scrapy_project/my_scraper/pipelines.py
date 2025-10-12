@@ -60,12 +60,12 @@ class JsonExportPipeline:
         # Create output directory if it doesn't exist
         output_dir = 'output'
         os.makedirs(output_dir, exist_ok=True)
-        
+
         # Create filename with timestamp
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f'{output_dir}/{spider.name}_{timestamp}.json'
-        
-        logging.info(f'Opening JSON export file: {filename}')
+
+        self.filename = filename
         self.file = open(filename, 'w', encoding='utf-8')
         self.items = []
     
@@ -75,7 +75,7 @@ class JsonExportPipeline:
             # Write all items as pretty-printed JSON
             json.dump(self.items, self.file, ensure_ascii=False, indent=2)
             self.file.close()
-            logging.info(f'Saved {len(self.items)} items to JSON')
+            logging.info(f'Saved {len(self.items)} items to {self.filename}')
     
     def process_item(self, item, spider):
         """Add item to list"""
@@ -98,31 +98,33 @@ class CsvExportPipeline:
         # Create output directory if it doesn't exist
         output_dir = 'output'
         os.makedirs(output_dir, exist_ok=True)
-        
+
         # Create filename with timestamp
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f'{output_dir}/{spider.name}_{timestamp}.csv'
-        
-        logging.info(f'Opening CSV export file: {filename}')
+
+        self.filename = filename
         self.file = open(filename, 'w', newline='', encoding='utf-8')
-    
+        self.item_count = 0
+
     def close_spider(self, spider):
         """Close file when spider closes"""
         if self.file:
             self.file.close()
-            logging.info(f'CSV export file closed')
+            logging.info(f'Saved {self.item_count} items to {self.filename}')
     
     def process_item(self, item, spider):
         """Write item to CSV"""
         adapter = ItemAdapter(item)
-        
+
         # Initialize writer with fields from first item
         if not self.writer:
             self.fields = list(adapter.keys())
             self.writer = csv.DictWriter(self.file, fieldnames=self.fields)
             self.writer.writeheader()
-        
+
         # Write row
         self.writer.writerow(adapter.asdict())
-        
+        self.item_count += 1
+
         return item

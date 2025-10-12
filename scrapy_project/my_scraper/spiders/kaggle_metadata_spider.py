@@ -148,7 +148,6 @@ class KaggleMetadataSpider(BaseSpider):
 
         try:
             # Navigate to the actual URL to get full dynamic content
-            self.logger.debug(f'Loading {response.url} in temporary driver')
             temp_driver.get(response.url)
 
             # Wait for page to load
@@ -172,10 +171,8 @@ class KaggleMetadataSpider(BaseSpider):
                 temp_driver, self.selectors, model_name, model_id
             )
 
-            # Log summary
-            desc_preview = item['short_description'][:50] if item['short_description'] else 'None'
-            self.logger.info(f"{model_name}: desc='{desc_preview}...', downloads={item['downloads']}, "
-                            f"tags count={len(item['tags'].split(',')) if item['tags'] else 0}")
+            # Log concise summary
+            self.logger.info(f"✓ {model_name} - Downloads: {item['downloads']}")
 
             yield item
 
@@ -202,23 +199,21 @@ class KaggleMetadataSpider(BaseSpider):
         action_selector = selectors.get('model_card_action')
         if action_selector:
             try:
-                self.logger.debug(f"Attempting to click model_card action: {action_selector}")
                 if self.click_element(driver, action_selector):
                     time.sleep(1)
                     # Refresh tree after click (using driver's page source)
                     tree = lxml_html.fromstring(driver.page_source)
-            except Exception as e:
-                self.logger.debug(f"Action click attempt error: {e}")
+            except Exception:
+                pass
         
         # Try CSS selectors via Selenium first
         for sel in selectors.get('model_card_selectors', []):
             try:
-                self.logger.debug(f"Trying model_card CSS selector: {sel}")
                 el = driver.find_element(By.CSS_SELECTOR, sel)
                 text = el.text.strip()
                 if text:
                     result['text'] = text
-                    
+
                     # Extract anchor hrefs
                     try:
                         anchors = el.find_elements(By.TAG_NAME, 'a')
@@ -228,11 +223,10 @@ class KaggleMetadataSpider(BaseSpider):
                                 result['links'].append(href)
                     except Exception:
                         pass
-                    
-                    self.logger.info(f"Found model_card using selector: {sel}")
+
                     break
-            except Exception as e:
-                self.logger.debug(f"model_card CSS selector {sel} not found: {e}")
+            except Exception:
+                pass
         
         # Fallback to XPath using lxml
         if not result['text']:
@@ -248,7 +242,7 @@ class KaggleMetadataSpider(BaseSpider):
                         text = elems[0].text_content().strip()
                         if text:
                             result['text'] = text
-                            
+
                             # Extract links
                             try:
                                 anchor_nodes = elems[0].xpath('.//a')
@@ -258,11 +252,10 @@ class KaggleMetadataSpider(BaseSpider):
                                         result['links'].append(href)
                             except Exception:
                                 pass
-                            
-                            self.logger.info(f"Found model_card using XPath fallback: {xp}")
+
                             break
-                except Exception as e:
-                    self.logger.debug(f"XPath {xp} failed: {e}")
+                except Exception:
+                    pass
         
         if not result['text']:
             self.logger.warning(f"Could not find model_card for {name}")
@@ -295,11 +288,10 @@ class KaggleMetadataSpider(BaseSpider):
         # Try to click the action that reveals the list
         if action_selector:
             try:
-                self.logger.debug(f"Trying to click transformers variation action: {action_selector}")
                 if self.click_element(driver, action_selector):
                     time.sleep(0.5)
-            except Exception as e:
-                self.logger.debug(f"Could not click transformers variation action: {e}")
+            except Exception:
+                pass
         
         # Find list items
         elems = []
