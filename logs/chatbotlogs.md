@@ -1,5 +1,18 @@
 # Chatbot Development Logs
 
+## 2025-10-12: Fixed run_all_spiders to support sequential spider execution (Franz Phillip G. Domingo)
+
+- Fixed critical bug where kaggle_metadata spider failed when running all spiders in sequence
+- Replaced CrawlerProcess with CrawlerRunner in run_all_spiders() method to support multiple sequential spiders
+- Added Twisted reactor integration using defer.inlineCallbacks for proper async execution
+- Implemented automatic input file detection for kaggle_metadata spider (uses most recent kaggle_links output)
+- Added intelligent spider dependency handling (kaggle_metadata now automatically receives kaggle_links output)
+- Imported CrawlerRunner and Twisted reactor/defer modules to main.py
+- Changed from individual process.start() calls to single reactor.run() with sequential crawling
+- Fixed "ReactorNotRestartable" error that occurred when trying to run multiple spiders
+- Enhanced spider sequencing to properly wait for each spider to complete before starting the next
+- Added informative logging to show which input file is being used for dependent spiders
+
 ## 2025-10-08: Modularized selector configuration and refactored scraping logic (Franz Phillip G. Domingo)
 
 - Created `selectors_config.py` module to centralize all CSS/XPath selectors used for web scraping
@@ -32,3 +45,19 @@
 - Improved error messages with detailed path information
 - Successfully tested tag extraction functionality with live Kaggle data
 - Script now works correctly when run directly from modules directory or project root
+
+## 2025-10-12: Fixed downloads extraction in Scrapy project (Franz Phillip G. Domingo)
+
+- Fixed downloads extraction bug where downloads field was not being populated correctly
+- Updated `base_spider.py` extract_downloads() method to accept driver parameter for dynamic content
+- Added Selenium-based extraction first (for JavaScript-rendered content) before falling back to XPath
+- Enhanced download selectors in `site_selectors.py` with CSS selector equivalents:
+  - Added span.iPCsnU, span.iURAhc, and other CSS class selectors
+  - Maintained XPath selectors as fallback options
+  - Ordered selectors by specificity (most specific first)
+- Updated `kaggle_metadata_spider.py` to pass driver to extract_downloads() method
+- Added comprehensive fallback logic: if selectors fail, searches all span elements for numeric values
+- Added detailed debug logging to track selector matching and element text extraction
+- Changed LOG_LEVEL to DEBUG in settings.py for troubleshooting
+- Verified old code successfully extracted downloads (419, 17.7K, 287, 70 for test models)
+- Downloads should now be correctly extracted from dynamically loaded Kaggle model pages

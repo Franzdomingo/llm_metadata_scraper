@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Scrapy
+.scrapy/
+
+# Output files (optional - comment out if you want to track output)
+output/*.csv
+output/*.json
+output/*.xml
+
+# Keep output directory structure
+!output/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# HTTP cache
+httpcache/
+
+# Test coverage
+.coverage
+htmlcov/

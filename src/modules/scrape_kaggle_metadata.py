@@ -32,14 +32,27 @@ from typing import List, Dict, Optional
 import logging
 import random
 import json
-from .scraper_settings import (
-    build_possible_input_paths,
-    DEFAULT_DELAY,
-    OUTPUT_JSON_NAME,
-    OUTPUT_CSV_NAME,
-    START_MESSAGE,
-    NOT_FOUND_MESSAGE,
-)
+
+# Import settings - handle both package and script execution
+try:
+    from .scraper_settings import (
+        build_possible_input_paths,
+        DEFAULT_DELAY,
+        OUTPUT_JSON_NAME,
+        OUTPUT_CSV_NAME,
+        START_MESSAGE,
+        NOT_FOUND_MESSAGE,
+    )
+except ImportError:
+    # Fallback for direct execution
+    from scraper_settings import (
+        build_possible_input_paths,
+        DEFAULT_DELAY,
+        OUTPUT_JSON_NAME,
+        OUTPUT_CSV_NAME,
+        START_MESSAGE,
+        NOT_FOUND_MESSAGE,
+    )
 
 # Import selectors configuration
 try:

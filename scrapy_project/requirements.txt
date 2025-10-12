@@ -1,0 +1,14 @@
+# Scrapy framework
+scrapy>=2.11.0
+
+# Selenium for JavaScript rendering
+selenium>=4.15.0
+
+# HTML parsing
+lxml>=4.9.3
+
+# Item adapters
+itemadapter>=0.8.0
+
+# Additional dependencies
+beautifulsoup4>=4.12.2
