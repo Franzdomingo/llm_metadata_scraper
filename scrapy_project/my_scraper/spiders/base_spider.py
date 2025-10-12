@@ -51,16 +51,20 @@ class BaseSpider(scrapy.Spider):
         """
         return response.meta.get('driver')
     
-    def parse_tree_from_response(self, response) -> lxml_html.HtmlElement:
+    def parse_tree_from_response(self, response, driver: Optional[webdriver.Chrome] = None) -> lxml_html.HtmlElement:
         """
         Create lxml tree from response
-        
+
         Args:
             response: Scrapy response object
-            
+            driver: Optional Selenium driver (not used, kept for backwards compatibility)
+
         Returns:
             lxml HtmlElement tree
         """
+        # Always use response.text which contains the page source captured by middleware
+        # at the correct time. DO NOT use driver.page_source as the driver may have
+        # navigated to a different page by the time this method is called.
         return lxml_html.fromstring(response.text)
     
     def extract_description(self, driver: webdriver.Chrome, tree: lxml_html.HtmlElement, 
@@ -118,22 +122,27 @@ class BaseSpider(scrapy.Spider):
 
         return description
     
-    def extract_downloads(self, driver: webdriver.Chrome, tree: lxml_html.HtmlElement, 
+    def extract_downloads(self, driver: webdriver.Chrome, tree: lxml_html.HtmlElement,
                          selectors: Dict, name: str) -> str:
         """
         Extract download count using configured selectors
-        
+
         Args:
             driver: Selenium driver instance (for dynamic content)
             tree: lxml tree object
             selectors: Selectors configuration dictionary
             name: Model name for logging
-            
+
         Returns:
             Extracted download count or empty string
         """
         downloads = ""
         all_candidates = []
+
+        # If no driver, can't extract downloads (requires JavaScript rendering)
+        if not driver:
+            self.logger.debug(f"No driver provided, skipping downloads extraction for {name}")
+            return downloads
         
         # First try CSS selectors via Selenium for dynamic content
         for selector in selectors.get('downloads', []):
@@ -248,66 +257,101 @@ class BaseSpider(scrapy.Spider):
             
             return downloads
 
-        # Fallback: Search all span elements for numeric values near "DOWNLOADS" heading
+        # Fallback: Search for numeric values near "DOWNLOADS" heading
         if not downloads:
             self.logger.debug(f"Trying fallback: searching for downloads near 'DOWNLOADS' heading")
             try:
-                # Find DOWNLOADS heading
-                downloads_heading = driver.find_elements(By.XPATH, "//*[contains(translate(text(), 'downloads', 'DOWNLOADS'), 'DOWNLOADS')]")
-                
+                # Strategy 1: Find the DOWNLOADS heading and look for siblings/nearby elements
+                downloads_heading = driver.find_elements(By.XPATH, "//*[contains(text(), 'DOWNLOADS') or contains(text(), 'Downloads')]")
+
                 if downloads_heading:
                     self.logger.debug(f"Found {len(downloads_heading)} 'DOWNLOADS' headings")
-                    # Look for numeric spans near the heading
+
+                    # Look for parent container and find numeric value within it
+                    for heading in downloads_heading[:2]:
+                        try:
+                            # Try to find parent div/section
+                            parent = heading.find_element(By.XPATH, './ancestor::div[1]')
+                            # Look for all text in the parent
+                            text = parent.text
+                            # Extract numbers from the text
+                            import re
+                            numbers = re.findall(r'\d+(?:[,.]\d+)?[KMB]?', text)
+                            for num in numbers:
+                                if is_numeric_value(num):
+                                    all_candidates.append(num)
+                                    self.logger.debug(f"Found candidate near DOWNLOADS heading: {num}")
+                        except Exception:
+                            continue
+
+                # Strategy 2: Look for all spans with numeric values
+                if not all_candidates:
                     all_spans = driver.find_elements(By.TAG_NAME, 'span')
-                    
-                    numeric_candidates = []
+
                     for span in all_spans:
                         try:
                             text = span.text.strip()
                             if text and is_numeric_value(text):
-                                classes = span.get_attribute('class') or ''
-                                numeric_candidates.append((text, classes))
+                                # Skip very small decimals (engagement ratios)
+                                try:
+                                    if '.' in text and not any(x in text.upper() for x in ['K', 'M', 'B']):
+                                        val = float(text.replace(',', ''))
+                                        if val < 1:
+                                            continue
+                                except (ValueError, TypeError):
+                                    pass
+
+                                all_candidates.append(text)
                         except:
                             continue
-                    
-                    if numeric_candidates:
-                        self.logger.info(f"Found {len(numeric_candidates)} numeric span elements:")
-                        for text, classes in numeric_candidates[:10]:
-                            self.logger.info(f"  - Text: '{text}' | Classes: '{classes}'")
-                        
-                        # Prefer values with K/M suffix
-                        with_suffix = [c[0] for c in numeric_candidates if any(x in c[0].upper() for x in ['K', 'M', 'B'])]
-                        if with_suffix:
-                            downloads = with_suffix[0]
-                            self.logger.info(f"Using first value with suffix: {downloads}")
-                        else:
-                            downloads = numeric_candidates[0][0]
-                            self.logger.info(f"Using first numeric value: {downloads}")
-                    else:
-                        self.logger.warning(f"No numeric span elements found for {name}")
+
+                if all_candidates:
+                    self.logger.info(f"Found {len(all_candidates)} download candidates: {all_candidates[:10]}")
+
+                    # Prefer values with K/M/B suffix, then largest plain number
+                    with_suffix = [c for c in all_candidates if any(x in c.upper() for x in ['K', 'M', 'B'])]
+                    if with_suffix:
+                        downloads = with_suffix[0]
+                        self.logger.info(f"Using first value with suffix: {downloads}")
+                    elif all_candidates:
+                        # Find largest number (likely to be total downloads)
+                        def to_int(val):
+                            try:
+                                digits = ''.join(c for c in val if c.isdigit())
+                                return int(digits) if digits else 0
+                            except:
+                                return 0
+                        downloads = max(all_candidates, key=to_int)
+                        self.logger.info(f"Using largest number: {downloads}")
+
             except Exception as e:
-                self.logger.error(f"Fallback span search failed: {e}")
+                self.logger.error(f"Fallback download search failed: {e}")
 
         if not downloads:
             self.logger.warning(f"Could not find downloads for {name}")
         
         return downloads
     
-    def extract_tags(self, driver: webdriver.Chrome, tree: lxml_html.HtmlElement, 
+    def extract_tags(self, driver: webdriver.Chrome, tree: lxml_html.HtmlElement,
                     selectors: Dict, name: str) -> str:
         """
         Extract tags using configured selectors
-        
+
         Args:
             driver: Selenium driver instance
             tree: lxml tree object
             selectors: Selectors configuration dictionary
             name: Model name for logging
-            
+
         Returns:
             Comma-separated string of tags or empty string
         """
         tags = []
+
+        # If no driver, can't extract tags (requires JavaScript rendering)
+        if not driver:
+            self.logger.debug(f"No driver provided, skipping tags extraction for {name}")
+            return ''
 
         try:
             self.logger.debug(f"Starting tag extraction for {name}")
@@ -373,6 +417,42 @@ class BaseSpider(scrapy.Spider):
                 except Exception as e:
                     self.logger.debug(f"Container selector {selector} failed: {e}")
                     continue
+
+            # Fallback: Look for links near "TAGS" or "Tags" heading
+            if not tags:
+                self.logger.debug(f"Trying fallback: searching for links near 'TAGS' heading")
+                try:
+                    # Find TAGS heading
+                    tags_heading = driver.find_elements(By.XPATH, "//*[contains(text(), 'TAGS') or contains(text(), 'Tags')]")
+
+                    if tags_heading:
+                        self.logger.debug(f"Found {len(tags_heading)} 'TAGS' headings")
+
+                        # Look for nearby links
+                        for heading in tags_heading[:2]:
+                            try:
+                                # Try to find parent container
+                                parent = heading.find_element(By.XPATH, './ancestor::div[2]')
+                                # Find all links in the container
+                                links = parent.find_elements(By.TAG_NAME, 'a')
+
+                                for link in links:
+                                    tag_text = link.text.strip()
+                                    if tag_text and tag_text not in tags:
+                                        # Filter out common non-tag link text
+                                        if tag_text.lower() not in ['home', 'models', 'datasets', 'code', 'competitions', 'learn']:
+                                            tags.append(tag_text)
+                                            self.logger.debug(f"Found tag via fallback: {tag_text}")
+                            except Exception:
+                                continue
+
+                        if tags:
+                            self.logger.info(f"Found {len(tags)} tags using fallback method")
+                    else:
+                        self.logger.debug("No TAGS heading found")
+
+                except Exception as e:
+                    self.logger.debug(f"Fallback tags search failed: {e}")
 
             if tags:
                 self.logger.info(f"Successfully extracted {len(tags)} tags for {name}")

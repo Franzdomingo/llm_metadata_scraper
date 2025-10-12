@@ -122,54 +122,66 @@ class KaggleMetadataSpider(BaseSpider):
     def parse(self, response):
         """
         Parse Kaggle model page for metadata
-        
+
         Args:
             response: Scrapy response object
-            
+
         Yields:
             KaggleMetadataItem with extracted metadata
         """
-        driver = self.get_driver_from_response(response)
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+
         model_name = response.meta.get('model_name', '')
         model_id = response.meta.get('model_id', 0)
-        
+
         self.logger.info(f'Processing {model_id}: {model_name}')
-        
-        # Wait a bit for dynamic content to load
-        time.sleep(1)
-        
-        # Parse tree
-        tree = self.parse_tree_from_response(response)
-        
-        # Create item
-        item = KaggleMetadataItem()
-        item['model_id'] = model_id
-        item['name'] = model_name
-        item['kaggle_url'] = response.url
-        
-        # Extract short description
-        item['short_description'] = self.extract_description(driver, tree, self.selectors, model_name)
-        
-        # Extract downloads
-        item['downloads'] = self.extract_downloads(driver, tree, self.selectors, model_name)
-        
-        # Extract tags
-        item['tags'] = self.extract_tags(driver, tree, self.selectors, model_name)
-        
-        # Extract model card
-        item['model_card'] = self.extract_model_card(driver, tree, self.selectors, model_name)
-        
-        # Extract transformers variations
-        item['transformers_variations'] = self.extract_transformers_variations(
-            driver, self.selectors, model_name, model_id
-        )
-        
-        # Log summary
-        desc_preview = item['short_description'][:50] if item['short_description'] else 'None'
-        self.logger.info(f"{model_name}: desc='{desc_preview}...', downloads={item['downloads']}, "
-                        f"tags count={len(item['tags'].split(',')) if item['tags'] else 0}")
-        
-        yield item
+
+        # Create a temporary driver and navigate to the actual URL
+        # This ensures extraction methods have access to fully-rendered dynamic content
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+
+        temp_driver = webdriver.Chrome(options=chrome_options)
+
+        try:
+            # Navigate to the actual URL to get full dynamic content
+            self.logger.debug(f'Loading {response.url} in temporary driver')
+            temp_driver.get(response.url)
+
+            # Wait for page to load
+            time.sleep(2)
+
+            # Parse tree from the temp driver's page source
+            tree = self.parse_tree_from_response(response)
+
+            # Create item
+            item = KaggleMetadataItem()
+            item['model_id'] = model_id
+            item['name'] = model_name
+            item['kaggle_url'] = response.url
+
+            # Extract using temp_driver which has the correct HTML loaded
+            item['short_description'] = self.extract_description(temp_driver, tree, self.selectors, model_name)
+            item['downloads'] = self.extract_downloads(temp_driver, tree, self.selectors, model_name)
+            item['tags'] = self.extract_tags(temp_driver, tree, self.selectors, model_name)
+            item['model_card'] = self.extract_model_card(temp_driver, tree, self.selectors, model_name)
+            item['transformers_variations'] = self.extract_transformers_variations(
+                temp_driver, self.selectors, model_name, model_id
+            )
+
+            # Log summary
+            desc_preview = item['short_description'][:50] if item['short_description'] else 'None'
+            self.logger.info(f"{model_name}: desc='{desc_preview}...', downloads={item['downloads']}, "
+                            f"tags count={len(item['tags'].split(',')) if item['tags'] else 0}")
+
+            yield item
+
+        finally:
+            # Always close the temporary driver
+            temp_driver.quit()
     
     def extract_model_card(self, driver, tree, selectors: Dict, name: str) -> str:
         """
@@ -193,7 +205,7 @@ class KaggleMetadataSpider(BaseSpider):
                 self.logger.debug(f"Attempting to click model_card action: {action_selector}")
                 if self.click_element(driver, action_selector):
                     time.sleep(1)
-                    # Refresh tree after click
+                    # Refresh tree after click (using driver's page source)
                     tree = lxml_html.fromstring(driver.page_source)
             except Exception as e:
                 self.logger.debug(f"Action click attempt error: {e}")

@@ -47,3 +47,5 @@ httpcache/
 # Test coverage
 .coverage
 htmlcov/
+
+nul

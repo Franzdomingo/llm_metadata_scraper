@@ -108,25 +108,32 @@ class SeleniumMiddleware:
         
         try:
             # Load the page
+            logging.debug(f'Loading URL in driver: {request.url}')
             self.driver.get(request.url)
-            
+
             # Wait for page to load (configurable via meta)
             wait_time = request.meta.get('selenium_wait', 3)
             wait_selector = request.meta.get('selenium_wait_selector')
-            
+
             if wait_selector:
                 wait = WebDriverWait(self.driver, wait_time)
                 wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, wait_selector)))
             else:
                 import time
                 time.sleep(wait_time)
-            
+
+            # Verify the driver is on the correct page
+            current_url = self.driver.current_url
+            logging.debug(f'Driver current URL: {current_url}')
+            if current_url != request.url:
+                logging.warning(f'URL mismatch! Requested: {request.url}, Current: {current_url}')
+
             # Get page source and create response
             body = self.driver.page_source.encode('utf-8')
-            
+
             # Store driver in meta for spider to use if needed
             request.meta['driver'] = self.driver
-            
+
             return HtmlResponse(
                 url=request.url,
                 body=body,
