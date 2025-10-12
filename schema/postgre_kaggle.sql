@@ -32,10 +32,12 @@ CREATE TABLE model_metadata (
 );
 
 -- Table for transformer-specific info (optional, for models that are transformers)
-CREATE TABLE transformers_info (
+CREATE TABLE transformers_variation__info (
     model_id INT REFERENCES kaggle_models(id) ON DELETE CASCADE PRIMARY KEY,
-    transformers TEXT[],
-    transformers_variation TEXT[],
-    transformers_details JSONB,  -- can store downloads, description, other info
+    transformers_variation TEXT,
+    transformers_variation_version TEXT,
+    transformers_variation_license TEXT,
+    transformers_variation_downloads INT,
+    transformers_model_card TEXT, -- store README or markdown content
     transformers_description TEXT
 );

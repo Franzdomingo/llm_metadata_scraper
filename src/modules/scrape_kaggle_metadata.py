@@ -32,6 +32,14 @@ from typing import List, Dict, Optional
 import logging
 import random
 import json
+from .scraper_settings import (
+    build_possible_input_paths,
+    DEFAULT_DELAY,
+    OUTPUT_JSON_NAME,
+    OUTPUT_CSV_NAME,
+    START_MESSAGE,
+    NOT_FOUND_MESSAGE,
+)
 
 # Import selectors configuration
 try:
@@ -88,7 +96,7 @@ def parse_tree_from_driver(driver: webdriver.Chrome) -> html.HtmlElement:
     page_source = driver.page_source
     return html.fromstring(page_source)
 
-def scrape_model_metadata(driver: webdriver.Chrome, url: str, name: str, selectors: Optional[Dict] = None) -> Dict[str, str]:
+def scrape_model_metadata(driver: webdriver.Chrome, url: str, name: str, selectors: Optional[Dict] = None, model_id: Optional[int] = None) -> Dict[str, str]:
     """
     Scrape metadata from a single Kaggle model page
 
@@ -101,6 +109,7 @@ def scrape_model_metadata(driver: webdriver.Chrome, url: str, name: str, selecto
         Dictionary containing name, url, short_description, downloads, and tags
     """
     metadata = {
+        'model_id': model_id,
         'name': name,
         'kaggle_url': url,
         'short_description': '',
@@ -148,6 +157,12 @@ def scrape_model_metadata(driver: webdriver.Chrome, url: str, name: str, selecto
         # Extract tags using configured selectors
         metadata['tags'] = _extract_tags(driver, tree, selectors, name)
 
+        # Extract transformers variations (if any) and attach to metadata
+        try:
+            metadata['transformers_variation__info'] = _extract_transformers_variations(driver, selectors, name, model_id)
+        except Exception as e:
+            logging.debug(f"Error extracting transformers variations for {name}: {e}")
+
         # Create more detailed logging
         desc_preview = metadata['short_description'][:50] if metadata['short_description'] else 'None'
         tags_preview = metadata['tags'][:50] if metadata['tags'] else 'None'
@@ -157,6 +172,79 @@ def scrape_model_metadata(driver: webdriver.Chrome, url: str, name: str, selecto
         logging.error(f"Error scraping {name} at {url}: {e}")
 
     return metadata
+
+
+def _extract_transformers_variations(driver: webdriver.Chrome, selectors: Dict, name: str, model_id: Optional[int]) -> List[Dict[str, object]]:
+    """
+    Extract transformers_variation entries by clicking the variation dropdown (if present)
+
+    Returns a list of dicts matching the schema fields (most fields will be empty if not
+    available on the model page).
+    """
+    variations = []
+
+    if not selectors:
+        return variations
+
+    action_selector = selectors.get('transformers_variation_action')
+    item_selector = selectors.get('transformers_variation_item')
+
+    # Try to click the action that reveals the list
+    try:
+        if action_selector:
+            logging.debug(f"Trying to click transformers variation action: {action_selector}")
+            action_el = driver.find_element(By.CSS_SELECTOR, action_selector)
+            try:
+                action_el.click()
+                time.sleep(0.5)
+            except Exception:
+                logging.debug("Click on transformers variation action failed; attempting JavaScript click")
+                driver.execute_script("arguments[0].click();", action_el)
+                time.sleep(0.5)
+    except Exception as e:
+        logging.debug(f"Could not click transformers variation action for {name}: {e}")
+
+    elems = []
+    # Prefer a general list item selector if available
+    try:
+        # Try common pattern first
+        elems = driver.find_elements(By.CSS_SELECTOR, 'li.MuiButtonBase-root')
+        if not elems and item_selector:
+            elems = driver.find_elements(By.CSS_SELECTOR, item_selector)
+    except Exception:
+        # Fallback to the configured item selector only
+        try:
+            if item_selector:
+                elems = driver.find_elements(By.CSS_SELECTOR, item_selector)
+        except Exception:
+            elems = []
+
+    for el in elems:
+        try:
+            text = el.text.strip()
+            if not text:
+                # try inner p element
+                try:
+                    p = el.find_element(By.CSS_SELECTOR, 'p')
+                    text = p.text.strip()
+                except Exception:
+                    text = ''
+
+            if text:
+                variations.append({
+                    'model_id': model_id,
+                    'transformers_variation': text,
+                    'transformers_variation_version': '',
+                    'transformers_variation_license': '',
+                    'transformers_variation_downloads': '',
+                    'transformers_model_card': '',
+                    'transformers_description': ''
+                })
+        except Exception:
+            continue
+
+    # If we found nothing, return empty list
+    return variations
 
 
 def _extract_description(driver: webdriver.Chrome, tree, selectors: Dict, name: str) -> str:
@@ -535,11 +623,13 @@ def scrape_models(driver: webdriver.Chrome, models: List[Dict[str, str]], select
     """
     results = []
 
+    # Generate sequential model_id starting at 1 for each model processed
     for i, model in enumerate(models, 1):
         name = model.get('name')
         url = model.get('kaggle_url')
-        logging.info(f"Processing {i}/{len(models)}: {name}")
-        metadata = scrape_model_metadata(driver, url, name, selectors=selectors)
+        model_id = i  # integer ID (1, 2, 3, ...). If zero-padded string is desired use f"{i:02d}"
+        logging.info(f"Processing {i}/{len(models)}: {name} (model_id={model_id})")
+        metadata = scrape_model_metadata(driver, url, name, selectors=selectors, model_id=model_id)
         results.append(metadata)
         time.sleep(delay)
 
@@ -572,13 +662,8 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(os.path.dirname(script_dir))  # Go up two levels from modules
     
-    # Try to find the input file in multiple locations
-    possible_input_paths = [
-        "output/kaggle_output.csv",  # From root directory
-        "../../output/kaggle_output.csv",  # From modules directory
-        os.path.join(project_root, "output", "kaggle_output.csv")  # Absolute path
-    ]
-    
+    # Build possible input file paths and pick the first existing
+    possible_input_paths = build_possible_input_paths(project_root)
     input_file = None
     for path in possible_input_paths:
         if os.path.exists(path):
@@ -595,16 +680,14 @@ def main():
         output_file = "output/kaggle_metadata.csv"
         output_json = "output/kaggle_metadata.json"
 
-    print("=" * 60)
-    print("Kaggle Metadata Scraper")
-    print("=" * 60)
+    # Minimal user-facing start message
+    print(START_MESSAGE)
 
     # Check if input file exists
     if not input_file:
-        print("Error: Input file 'kaggle_output.csv' not found in any of these locations:")
+        print(NOT_FOUND_MESSAGE)
         for path in possible_input_paths:
-            print(f"  - {path}")
-        print("\nPlease ensure the kaggle_output.csv file exists in the output directory.")
+            print(f" - {path}")
         return
 
     start_time = time.time()
@@ -616,12 +699,12 @@ def main():
         print("No models found in input file.")
         return
 
-    print(f"\nScraping metadata for {len(models)} models...")
+    print(f"Scraping {len(models)} models...")
 
     # Create driver and run batch scraping (re-usable entry point)
     driver = create_driver()
     try:
-        metadata_list = scrape_models(driver, models, selectors=None, delay=1.0)
+        metadata_list = scrape_models(driver, models, selectors=None, delay=DEFAULT_DELAY)
     finally:
         driver.quit()
 
@@ -630,22 +713,9 @@ def main():
     # Save results as JSON only
     save_to_json(metadata_list, output_json)
 
-    # Display summary
-    print("\n" + "=" * 60)
-    print(f"Scraping complete!")
-    print(f"Total models processed: {len(metadata_list)}")
-    print(f"Execution time: {elapsed_time:.2f} seconds")
-
-    # Show sample results
-    print("\nSample results:")
-    for metadata in metadata_list[:3]:
-        print(f"\n  Name: {metadata['name']}")
-        print(f"  URL: {metadata['kaggle_url']}")
-        print(f"  Description: {metadata['short_description'][:80]}...")
-        print(f"  Downloads: {metadata['downloads']}")
-        print(f"  Tags: {metadata['tags']}")
-
-    print(f"\nFull results (JSON) saved to: {output_json}")
+    # Minimal summary for user
+    print(f"Scraping complete: {len(metadata_list)} models processed in {elapsed_time:.2f}s")
+    print(f"Results saved to: {output_json}")
 
 if __name__ == "__main__":
     main()

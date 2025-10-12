@@ -45,6 +45,10 @@ class KaggleSelectors:
 
     # Optional action button to reveal model card (click before scraping)
     MODEL_CARD_ACTION_BUTTON: str = '.sc-kHBIib > span:nth-child(2)'
+    # Transformers variation dropdown action selector (click to open the list)
+    TRANSFORMERS_VARIATION_ACTION: str = '.MuiSelect-iconOutlined'
+    # Transformers variation list item selector (the specific list item text to capture)
+    TRANSFORMERS_VARIATION_ITEM: str = 'li.MuiButtonBase-root:nth-child(1) > div:nth-child(1) > p:nth-child(1)'
     
     # Fallback CSS selector for description (used with Selenium)
     DESCRIPTION_CSS_FALLBACK: str = '.sc-fhfEft > p:nth-child(2)'
@@ -88,6 +92,8 @@ def get_selectors_for_site(site: str) -> Dict:
             'description_css_fallback': KaggleSelectors.DESCRIPTION_CSS_FALLBACK,
             'model_card_selectors': KaggleSelectors.MODEL_CARD_SELECTORS,
             'model_card_action': KaggleSelectors.MODEL_CARD_ACTION_BUTTON,
+            'transformers_variation_action': KaggleSelectors.TRANSFORMERS_VARIATION_ACTION,
+            'transformers_variation_item': KaggleSelectors.TRANSFORMERS_VARIATION_ITEM,
             'tags': KaggleSelectors.TAG_SELECTORS,
             'tag_links': KaggleSelectors.TAG_LINK_SELECTOR
         },
