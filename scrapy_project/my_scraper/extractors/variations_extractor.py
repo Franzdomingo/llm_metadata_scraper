@@ -443,7 +443,6 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
 
                 # Create variation dictionary
                 variation = {
-                    'model_id': model_id,
                     'transformers_variation': f'variation_{variation_counter:02d}',
                     'transformers_variation_name': variation_name,
                     'transformers_variation_version': variation_version,

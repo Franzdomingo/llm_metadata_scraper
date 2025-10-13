@@ -7,6 +7,7 @@ import scrapy
 import time
 import csv
 import os
+from datetime import datetime
 from typing import Dict, List, Optional
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -167,6 +168,9 @@ class KaggleMetadataSpider(scrapy.Spider):
             item['model_id'] = model_id
             item['name'] = model_name
             item['kaggle_url'] = response.url
+
+            # Add timestamp when data is scraped
+            item['scraped_on'] = datetime.now().isoformat()
 
             # Extract using temp_driver which has the correct HTML loaded
             item['short_description'] = extract_description(temp_driver, tree, self.selectors, model_name)

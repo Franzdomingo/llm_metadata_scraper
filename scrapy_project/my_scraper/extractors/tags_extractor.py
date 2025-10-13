@@ -158,7 +158,7 @@ def extract_tags_from_more_buttons(driver: webdriver.Chrome, selectors: Dict) ->
 
 
 def extract_tags(driver: webdriver.Chrome, tree: lxml_html.HtmlElement,
-                selectors: Dict, name: str) -> str:
+                selectors: Dict, name: str) -> list:
     """
     Extract tags using configured selectors
 
@@ -169,14 +169,14 @@ def extract_tags(driver: webdriver.Chrome, tree: lxml_html.HtmlElement,
         name: Model name for logging
 
     Returns:
-        Comma-separated string of tags or empty string
+        List of tag strings
     """
     tags = []
 
     # If no driver, can't extract tags (requires JavaScript rendering)
     if not driver:
         logger.debug(f"No driver provided, skipping tags extraction for {name}")
-        return ''
+        return []
 
     try:
         logger.debug(f"Starting tag extraction for {name}")
@@ -339,4 +339,4 @@ def extract_tags(driver: webdriver.Chrome, tree: lxml_html.HtmlElement,
     except Exception as e:
         logger.error(f"Error extracting tags for {name}: {e}")
 
-    return ', '.join(tags) if tags else ''
+    return tags
