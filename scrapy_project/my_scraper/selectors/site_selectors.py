@@ -53,6 +53,12 @@ class KaggleSelectors:
     # Individual tag link selector
     TAG_LINK_SELECTOR: str = 'a.sc-hZpmlk.kpuQUO'
 
+    # Tags "more" button selectors (for expanding hidden tags)
+    TAG_MORE_BUTTON_TEXT_SPAN: str = 'span.eWEDa-d'  # Span containing "X more" text
+    TAG_MORE_POPUP_CONTAINER: str = '.eqXpEC'  # Popup container that appears when "more" is clicked
+    TAG_POPUP_CHECKBOX_BUTTON: str = 'button[role="checkbox"]'  # Tag buttons within popup
+    TAG_POPUP_TEXT_SPAN: str = 'span.bMbEZO'  # Span containing tag text within popup buttons
+
     # Collaborators action button (to expand/collapse the section if needed)
     COLLABORATORS_ACTION_BUTTON: str = 'div.sc-bBhMX:nth-child(1) > div:nth-child(1) > button:nth-child(2)'
 
@@ -174,6 +180,10 @@ def get_selectors_for_site(site: str) -> Dict:
             'transformers_variation_item': KaggleSelectors.TRANSFORMERS_VARIATION_ITEM,
             'tags': KaggleSelectors.TAG_SELECTORS,
             'tag_links': KaggleSelectors.TAG_LINK_SELECTOR,
+            'tag_more_button_span': KaggleSelectors.TAG_MORE_BUTTON_TEXT_SPAN,
+            'tag_more_popup': KaggleSelectors.TAG_MORE_POPUP_CONTAINER,
+            'tag_popup_checkbox': KaggleSelectors.TAG_POPUP_CHECKBOX_BUTTON,
+            'tag_popup_text_span': KaggleSelectors.TAG_POPUP_TEXT_SPAN,
             'collaborators': KaggleSelectors.COLLABORATORS_SELECTORS,
             'collaborators_action': KaggleSelectors.COLLABORATORS_ACTION_BUTTON,
             'authors': KaggleSelectors.AUTHORS_SELECTORS,

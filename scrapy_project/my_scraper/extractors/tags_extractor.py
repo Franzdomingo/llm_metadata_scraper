@@ -3,12 +3,132 @@ Tags extraction functions
 """
 
 import logging
-from typing import Dict
+import time
+from typing import Dict, Set
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
 from lxml import html as lxml_html
 
+from .selenium_utils import (
+    scroll_element_into_view,
+    click_element_with_fallback,
+    close_popup,
+    get_element_text,
+    get_element_attribute
+)
+
 logger = logging.getLogger(__name__)
+
+
+def extract_tags_from_more_buttons(driver: webdriver.Chrome, selectors: Dict) -> Set[str]:
+    """
+    Extract tags from hidden 'more' buttons that reveal additional tags in popups
+
+    Args:
+        driver: Selenium driver instance
+        selectors: Selectors configuration dictionary
+
+    Returns:
+        Set of tag strings found in popups
+    """
+    all_tags = set()
+
+    try:
+        # Get selectors from configuration
+        more_button_span = selectors.get('tag_more_button_span', 'span.eWEDa-d')
+        popup_container = selectors.get('tag_more_popup', '.eqXpEC')
+        popup_checkbox = selectors.get('tag_popup_checkbox', 'button[role="checkbox"]')
+        popup_text_span = selectors.get('tag_popup_text_span', 'span.bMbEZO')
+
+        logger.debug("Looking for 'more' buttons to expand tags")
+
+        # Find all buttons that contain the "more" text span
+        more_text_spans = driver.find_elements(By.CSS_SELECTOR, more_button_span)
+
+        # Get the parent buttons
+        more_buttons = []
+        for span in more_text_spans:
+            try:
+                # Check if the span text contains "more"
+                if 'more' in span.text.lower():
+                    button = span.find_element(By.XPATH, './ancestor::button[@role="button"]')
+                    if button and button not in more_buttons:
+                        more_buttons.append(button)
+            except Exception:
+                continue
+
+        if not more_buttons:
+            logger.debug("No 'more' buttons found")
+            return all_tags
+
+        logger.info(f"Found {len(more_buttons)} 'more' buttons to click")
+
+        # Click each more button and extract tags from the popup
+        buttons_clicked = 0
+        for i, button in enumerate(more_buttons):
+            try:
+                # Get button text for logging
+                button_text = get_element_text(button, f'button {i+1}')
+                logger.debug(f"Clicking button {i+1}/{len(more_buttons)}: '{button_text}'")
+
+                # Scroll button into view and click
+                scroll_element_into_view(driver, button)
+
+                # Click the button
+                if not click_element_with_fallback(driver, button):
+                    logger.debug(f"Failed to click button {i+1}, skipping")
+                    continue
+
+                buttons_clicked += 1
+                time.sleep(0.5)  # Wait for popup to appear
+
+                # Find the popup div
+                try:
+                    wait = WebDriverWait(driver, 3)
+                    popup = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, popup_container)))
+
+                    # Extract all tags from the popup
+                    tag_buttons = popup.find_elements(By.CSS_SELECTOR, popup_checkbox)
+
+                    for tag_button in tag_buttons:
+                        # Get the aria-label which contains the tag name
+                        tag_name = get_element_attribute(tag_button, 'aria-label')
+                        if tag_name:
+                            all_tags.add(tag_name)
+                        else:
+                            # Fallback: get text from span
+                            tag_spans = tag_button.find_elements(By.CSS_SELECTOR, popup_text_span)
+                            for span in tag_spans:
+                                tag_text = get_element_text(span)
+                                if tag_text:
+                                    all_tags.add(tag_text)
+
+                    logger.debug(f"Extracted {len(tag_buttons)} tags from popup")
+
+                    # Close the popup
+                    close_popup(driver)
+
+                except TimeoutException:
+                    logger.debug(f"Popup did not appear for button {i+1}")
+                except Exception as e:
+                    logger.debug(f"Error extracting tags from popup: {e}")
+
+            except StaleElementReferenceException:
+                logger.debug(f"Button {i+1} became stale, skipping")
+                continue
+            except Exception as e:
+                logger.debug(f"Error clicking button {i+1}: {e}")
+                continue
+
+        logger.info(f"Clicked {buttons_clicked} 'more' buttons and found {len(all_tags)} additional tags")
+
+    except Exception as e:
+        logger.error(f"Error in extract_tags_from_more_buttons: {e}")
+
+    return all_tags
 
 
 def extract_tags(driver: webdriver.Chrome, tree: lxml_html.HtmlElement,
@@ -35,7 +155,14 @@ def extract_tags(driver: webdriver.Chrome, tree: lxml_html.HtmlElement,
     try:
         logger.debug(f"Starting tag extraction for {name}")
 
-        # First try the specific tag link selector
+        # First, try to extract tags from hidden "more" buttons
+        logger.debug("Checking for hidden tags in 'more' buttons")
+        hidden_tags = extract_tags_from_more_buttons(driver, selectors)
+        if hidden_tags:
+            logger.info(f"Found {len(hidden_tags)} tags from 'more' buttons")
+            tags.extend(list(hidden_tags))
+
+        # Then try the specific tag link selector
         tag_link_selector = selectors.get('tag_links')
         if tag_link_selector:
             logger.debug(f"Trying specific tag link selector: {tag_link_selector}")
@@ -51,9 +178,8 @@ def extract_tags(driver: webdriver.Chrome, tree: lxml_html.HtmlElement,
                     except Exception:
                         continue
 
-                if tags:
-                    logger.info(f"Found {len(tags)} tags using specific selector")
-                    return ', '.join(tags)
+                if tag_links:
+                    logger.info(f"Found {len(tag_links)} additional tags using specific selector")
 
             except Exception as e:
                 logger.debug(f"Specific tag link selector failed: {e}")
