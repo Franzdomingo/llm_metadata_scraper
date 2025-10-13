@@ -175,6 +175,7 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
         downloads_selector = selectors.get('transformers_variation_downloads')
         license_selector = selectors.get('transformers_variation_license')
         model_card_selector = selectors.get('transformers_variation_model_card')
+        is_finetunable_selector = selectors.get('transformers_is_finetunable')
 
         logger.info(f"Using selectors - action: {action_selector}, list_items: {list_items_selector}")
 
@@ -346,6 +347,7 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                 variation_downloads = ''
                 variation_license = ''
                 variation_model_card = ''
+                variation_is_finetunable = ''
 
                 # Extract version
                 if version_selector:
@@ -410,6 +412,35 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                 if not variation_model_card and model_card_selectors:
                     logger.info(f"Variation {variation_counter}: Could not find model card with any selector")
 
+                # Extract is_finetunable (try multiple selectors)
+                # Note: We need to find all matching elements and filter for "Yes"/"No" since
+                # the selector matches multiple elements (version, license, etc.)
+                is_finetunable_selectors = is_finetunable_selector if isinstance(is_finetunable_selector, list) else [is_finetunable_selector] if is_finetunable_selector else []
+
+                for idx, ft_selector in enumerate(is_finetunable_selectors):
+                    try:
+                        # Find ALL matching elements instead of just the first one
+                        finetunable_elems = driver.find_elements(By.CSS_SELECTOR, ft_selector)
+                        logger.info(f"Variation {variation_counter}: Found {len(finetunable_elems)} elements matching is_finetunable selector {idx + 1}")
+
+                        # Look for element with "Yes" or "No" text
+                        for elem in finetunable_elems:
+                            text = elem.text.strip()
+                            # Check if it's a Yes/No value (case-insensitive)
+                            if text.lower() in ['yes', 'no']:
+                                variation_is_finetunable = text
+                                logger.info(f"Variation {variation_counter}: Found is_finetunable '{variation_is_finetunable}' using selector {idx + 1}/{len(is_finetunable_selectors)}")
+                                break
+
+                        if variation_is_finetunable:
+                            break
+                    except Exception as e:
+                        logger.info(f"Variation {variation_counter}: Is_finetunable selector {idx + 1}/{len(is_finetunable_selectors)} failed: {e}")
+                        continue
+
+                if not variation_is_finetunable and is_finetunable_selectors:
+                    logger.info(f"Variation {variation_counter}: Could not find is_finetunable with any selector")
+
                 # Create variation dictionary
                 variation = {
                     'model_id': model_id,
@@ -419,7 +450,7 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                     'transformers_variation_license': variation_license,
                     'transformers_variation_downloads': variation_downloads,
                     'transformers_model_card': variation_model_card,
-                    'transformers_description': ''
+                    'transformers_is_finetunable': variation_is_finetunable
                 }
                 variations.append(variation)
                 logger.info(f"Extracted variation_{variation_counter:02d}: {variation_name} (Version: {variation_version}, Downloads: {variation_downloads}, License: {variation_license})")

@@ -169,6 +169,14 @@ class KaggleSelectors:
         'div.sc-lkCrJH.ghmUBs',  # With specific class
         'div.sc-lkCrJH',  # Fallback - any sc-lkCrJH div
     ]
+
+    # Is Finetunable selector for variation (appears after selecting a variation)
+    # Target: p element with "Yes" or "No" indicating if the model is finetunable
+    # Note: Uses same class as license plain text, need to differentiate by context/position
+    TRANSFORMERS_IS_FINETUNABLE_SELECTORS: List[str] = [
+        'p.sc-gGKoUb.bEqAGC[style*="margin-top"]',  # With margin-top style
+        'p.sc-gGKoUb.bEqAGC',  # Fallback - may match multiple, need to filter
+    ]
     
     # Fallback CSS selector for description (used with Selenium)
     DESCRIPTION_CSS_FALLBACK: str = '.sc-fhfEft > p:nth-child(2)'
@@ -237,6 +245,7 @@ def get_selectors_for_site(site: str) -> Dict:
             'transformers_variation_downloads': KaggleSelectors.TRANSFORMERS_VARIATION_DOWNLOADS,
             'transformers_variation_license': KaggleSelectors.TRANSFORMERS_VARIATION_LICENSE_SELECTORS,
             'transformers_variation_model_card': KaggleSelectors.TRANSFORMERS_VARIATION_MODEL_CARD_SELECTORS,
+            'transformers_is_finetunable': KaggleSelectors.TRANSFORMERS_IS_FINETUNABLE_SELECTORS,
             'tags': KaggleSelectors.TAG_SELECTORS,
             'tag_links': KaggleSelectors.TAG_LINK_SELECTOR,
             'tag_more_button_span': KaggleSelectors.TAG_MORE_BUTTON_TEXT_SPAN,

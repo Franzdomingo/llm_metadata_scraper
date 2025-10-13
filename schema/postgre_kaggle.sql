@@ -40,5 +40,5 @@ CREATE TABLE transformers_variation__info (
     transformers_variation_license TEXT,
     transformers_variation_downloads INT,
     transformers_model_card TEXT, -- store README or markdown content
-    transformers_description TEXT
+    transformers_is_finetunable BOOLEAN 
 );
