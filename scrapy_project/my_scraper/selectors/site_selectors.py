@@ -83,6 +83,19 @@ class KaggleSelectors:
         '//div[contains(@class, "sc-bBhMX")][2]//p[contains(@class, "sc-gGKoUb")]'
     ]
 
+    # Provenance action button (to expand the provenance section)
+    PROVENANCE_ACTION_BUTTON: str = 'div.sc-bBhMX:nth-child(4) > div:nth-child(1) > button:nth-child(2)'
+
+    # Provenance selectors - ordered by priority
+    # Target: div containing provenance updates, sources, and citations
+    PROVENANCE_SELECTORS: List[str] = [
+        # Most specific - target the provenance container
+        '.sc-fPzfn',
+        'div.sc-cFFDlC.sc-fPzfn.esaBZM.hMDRMp',
+        # Fallback - XPath
+        '//div[contains(@class, "sc-fPzfn")]'
+    ]
+
     # Model card selectors (CSS) - ordered by priority
     MODEL_CARD_SELECTORS: List[str] = [
         'div.sc-lkCrJH:nth-child(1)',
@@ -163,6 +176,8 @@ def get_selectors_for_site(site: str) -> Dict:
             'collaborators_action': KaggleSelectors.COLLABORATORS_ACTION_BUTTON,
             'authors': KaggleSelectors.AUTHORS_SELECTORS,
             'authors_action': KaggleSelectors.AUTHORS_ACTION_BUTTON,
+            'provenance': KaggleSelectors.PROVENANCE_SELECTORS,
+            'provenance_action': KaggleSelectors.PROVENANCE_ACTION_BUTTON,
             'model_links_xpath': KaggleSelectors.MODEL_LINKS_XPATH,
             'model_name_xpath': KaggleSelectors.MODEL_NAME_XPATH,
             'next_button_xpath': KaggleSelectors.NEXT_BUTTON_XPATH,

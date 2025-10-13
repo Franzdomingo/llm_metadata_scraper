@@ -171,12 +171,14 @@ class KaggleMetadataSpider(BaseSpider):
                 temp_driver, self.selectors, model_name, model_id
             )
 
-            # Extract collaborators and authors, then build model_metadata
+            # Extract collaborators, authors, and provenance, then build model_metadata
             collaborators = self.extract_collaborators(temp_driver, tree, self.selectors, model_name)
             authors = self.extract_authors(temp_driver, tree, self.selectors, model_name)
+            provenance = self.extract_provenance(temp_driver, tree, self.selectors, model_name)
             item['model_metadata'] = {
                 'collaborators': collaborators,
-                'authors': authors
+                'authors': authors,
+                'provenance': provenance
             }
 
             # Log concise summary

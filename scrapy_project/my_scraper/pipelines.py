@@ -52,6 +52,17 @@ class DataCleaningPipeline:
                         for collab in metadata['collaborators']
                     ]
 
+                # Clean authors list if present
+                if 'authors' in metadata and isinstance(metadata['authors'], list):
+                    metadata['authors'] = [
+                        clean_text(author) if isinstance(author, str) else author
+                        for author in metadata['authors']
+                    ]
+
+                # Clean provenance text if present
+                if 'provenance' in metadata and isinstance(metadata['provenance'], str):
+                    metadata['provenance'] = clean_text(metadata['provenance'])
+
         return item
 
 
