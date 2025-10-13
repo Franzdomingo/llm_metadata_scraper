@@ -22,15 +22,17 @@ class KaggleSelectors:
     
     # Download count selectors - ordered by priority
     # CSS selectors first (for Selenium), then XPath (for lxml)
-    # Updated 2025-10-12: Precise selectors targeting downloads section
-    # Target: span with classes 'sc-kCuUfV sc-hoocXy iPCsnU eqfbZr' containing download count
-    # NOTE: Excludes Engagement section which has 'sc-kicaQb' and 'cNEpba' classes
+    # Updated 2025-10-13: Precise selectors targeting downloads section
+    # Target: span element containing download count (NOT views)
+    # NOTE: Excludes Engagement/Views section
     DOWNLOAD_SELECTORS: List[str] = [
         # CSS selectors (try these first with Selenium for dynamic content)
-        # Most specific - targets exact downloads location with full class chain
+        # Most specific - user-provided selectors that correctly target downloads
+        '.sc-jTpuXY > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > span:nth-child(1)',
+        'div.sc-gUYSAC:nth-child(2) > div:nth-child(2) > div:nth-child(2) > span:nth-child(1)',
+        # Original selectors (fallback)
         'span.sc-kCuUfV.sc-hoocXy.iPCsnU.eqfbZr',  # Index [388]: '430' - exact match
         'span.sc-hoocXy.eqfbZr',  # Downloads-specific classes (excludes Engagement)
-        '.sc-jTpuXY > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > span:nth-child(1)',
         '.sc-jTpuXY > div:nth-child(1) > div:nth-child(2) > div:nth-child(1)',
         # Fallback with class filtering
         'span.iPCsnU.eqfbZr',  # Partial class match - still excludes Engagement
@@ -50,7 +52,37 @@ class KaggleSelectors:
     
     # Individual tag link selector
     TAG_LINK_SELECTOR: str = 'a.sc-hZpmlk.kpuQUO'
-    
+
+    # Collaborators action button (to expand/collapse the section if needed)
+    COLLABORATORS_ACTION_BUTTON: str = 'div.sc-bBhMX:nth-child(1) > div:nth-child(1) > button:nth-child(2)'
+
+    # Collaborators selectors - ordered by priority
+    # Target: p elements with margin-left style containing collaborator names
+    COLLABORATORS_SELECTORS: List[str] = [
+        # Most specific - target p elements within each collaborator div
+        'p.sc-gGKoUb.bEqAGC',
+        # Alternative - target p elements with margin-left style
+        'p[style*="margin-left"]',
+        # Fallback - find all p elements within the collaborators container
+        '.sc-cFFDlC p',
+        # XPath fallback
+        '//div[contains(@class, "sc-cFFDlC")]//p[contains(@class, "sc-gGKoUb")]'
+    ]
+
+    # Authors action button (to expand the authors section)
+    AUTHORS_ACTION_BUTTON: str = 'div.sc-bBhMX:nth-child(2) > div:nth-child(1) > button:nth-child(2)'
+
+    # Authors selectors - ordered by priority
+    # Target: p element containing authors/contributors information
+    AUTHORS_SELECTORS: List[str] = [
+        # Most specific - target the authors container
+        'div.sc-bBhMX:nth-child(2) > div:nth-child(2)',
+        # Alternative - target p elements with authors class
+        'p.sc-gGKoUb.bEqAGC',
+        # Fallback - XPath
+        '//div[contains(@class, "sc-bBhMX")][2]//p[contains(@class, "sc-gGKoUb")]'
+    ]
+
     # Model card selectors (CSS) - ordered by priority
     MODEL_CARD_SELECTORS: List[str] = [
         'div.sc-lkCrJH:nth-child(1)',
@@ -127,6 +159,10 @@ def get_selectors_for_site(site: str) -> Dict:
             'transformers_variation_item': KaggleSelectors.TRANSFORMERS_VARIATION_ITEM,
             'tags': KaggleSelectors.TAG_SELECTORS,
             'tag_links': KaggleSelectors.TAG_LINK_SELECTOR,
+            'collaborators': KaggleSelectors.COLLABORATORS_SELECTORS,
+            'collaborators_action': KaggleSelectors.COLLABORATORS_ACTION_BUTTON,
+            'authors': KaggleSelectors.AUTHORS_SELECTORS,
+            'authors_action': KaggleSelectors.AUTHORS_ACTION_BUTTON,
             'model_links_xpath': KaggleSelectors.MODEL_LINKS_XPATH,
             'model_name_xpath': KaggleSelectors.MODEL_NAME_XPATH,
             'next_button_xpath': KaggleSelectors.NEXT_BUTTON_XPATH,

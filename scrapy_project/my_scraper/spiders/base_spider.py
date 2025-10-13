@@ -137,22 +137,23 @@ class BaseSpider(scrapy.Spider):
             Extracted download count or empty string
         """
         downloads = ""
-        all_candidates = []
 
         # If no driver, can't extract downloads (requires JavaScript rendering)
         if not driver:
             self.logger.debug(f"No driver provided, skipping downloads extraction for {name}")
             return downloads
-        
-        # First try CSS selectors via Selenium for dynamic content
+
+        # Try CSS selectors via Selenium for dynamic content
+        # IMPORTANT: Use the FIRST valid match from prioritized selectors
+        # Don't collect all candidates - trust the selector priority order
         for selector in selectors.get('downloads', []):
             # Check if it's a CSS selector (starts with . or #)
-            if selector.startswith('.') or selector.startswith('#') or selector.startswith('span'):
+            if selector.startswith('.') or selector.startswith('#') or selector.startswith('span') or selector.startswith('div'):
                 try:
                     self.logger.debug(f"Trying downloads CSS selector via Selenium: {selector}")
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
                     self.logger.debug(f"Found {len(elements)} elements with CSS selector")
-                    
+
                     for elem in elements:
                         try:
                             text = elem.text.strip()
@@ -168,26 +169,27 @@ class BaseSpider(scrapy.Spider):
                                             continue
                                 except (ValueError, TypeError):
                                     pass  # If conversion fails, keep it as candidate
-                                
-                                all_candidates.append(text)
-                                self.logger.debug(f"Found candidate: {text}")
+
+                                # Found a valid value - return it immediately
+                                self.logger.info(f"Found downloads using selector '{selector}': {text}")
+                                return text
                         except Exception as e:
                             self.logger.debug(f"Error getting text from element: {e}")
                             continue
                 except Exception as e:
                     self.logger.debug(f"Downloads CSS selector {selector} failed: {e}")
-        
+
         # Try XPath selectors using lxml tree as fallback
         for selector in selectors.get('downloads', []):
             # Skip CSS selectors (already tried above)
-            if selector.startswith('.') or selector.startswith('#') or selector.startswith('span'):
+            if selector.startswith('.') or selector.startswith('#') or selector.startswith('span') or selector.startswith('div'):
                 continue
-                
+
             try:
                 self.logger.debug(f"Trying downloads XPath selector: {selector}")
                 download_elements = tree.xpath(selector)
                 self.logger.debug(f"Found {len(download_elements)} elements with XPath")
-                
+
                 if download_elements:
                     for elem in download_elements:
                         text = elem.text_content().strip()
@@ -202,60 +204,13 @@ class BaseSpider(scrapy.Spider):
                                         continue
                             except (ValueError, TypeError):
                                 pass  # If conversion fails, keep it as candidate
-                            
-                            all_candidates.append(text)
-                            self.logger.debug(f"Found candidate: {text}")
+
+                            # Found a valid value - return it immediately
+                            self.logger.info(f"Found downloads using XPath '{selector}': {text}")
+                            return text
             except Exception as e:
                 self.logger.debug(f"Downloads XPath selector {selector} failed: {e}")
                 continue
-
-        # Choose the best candidate from all found values
-        # Prefer: 1) Values with K/M/B suffix (total downloads), 2) Largest plain number
-        if all_candidates:
-            self.logger.info(f"Found {len(all_candidates)} download candidates: {all_candidates}")
-            
-            # Separate candidates with suffix (K/M/B) from plain numbers
-            with_suffix = [c for c in all_candidates if any(x in c.upper() for x in ['K', 'M', 'B'])]
-            plain_numbers = [c for c in all_candidates if c not in with_suffix]
-            
-            # Prefer largest value with suffix, or largest plain number
-            if with_suffix:
-                # Sort by converting to numeric value for comparison
-                def parse_suffix(val):
-                    try:
-                        val_upper = val.upper()
-                        # Extract only digits and decimal point
-                        num_str = ''.join(c for c in val if c.isdigit() or c == '.')
-                        if not num_str or num_str == '.':
-                            return 0
-                        num = float(num_str)
-                        if 'K' in val_upper:
-                            return num * 1000
-                        elif 'M' in val_upper:
-                            return num * 1000000
-                        elif 'B' in val_upper:
-                            return num * 1000000000
-                        return num
-                    except (ValueError, TypeError):
-                        return 0
-                
-                downloads = max(with_suffix, key=parse_suffix)
-                self.logger.info(f"Selected downloads (with suffix): {downloads}")
-            elif plain_numbers:
-                # Convert to int for comparison (remove commas and extract only digits)
-                def to_int(val):
-                    try:
-                        # Extract only digits
-                        digits = ''.join(c for c in val if c.isdigit())
-                        if not digits:
-                            return 0
-                        return int(digits)
-                    except (ValueError, TypeError):
-                        return 0
-                downloads = max(plain_numbers, key=to_int)
-                self.logger.info(f"Selected downloads (plain number): {downloads}")
-            
-            return downloads
 
         # Fallback: Search for numeric values near "DOWNLOADS" heading
         if not downloads:
@@ -463,7 +418,300 @@ class BaseSpider(scrapy.Spider):
             self.logger.error(f"Error extracting tags for {name}: {e}")
 
         return ', '.join(tags) if tags else ''
-    
+
+    def extract_collaborators(self, driver: webdriver.Chrome, tree: lxml_html.HtmlElement,
+                             selectors: Dict, name: str) -> list:
+        """
+        Extract collaborators using configured selectors
+
+        Args:
+            driver: Selenium driver instance
+            tree: lxml tree object
+            selectors: Selectors configuration dictionary
+            name: Model name for logging
+
+        Returns:
+            List of collaborator names
+        """
+        collaborators = []
+
+        # If no driver, can't extract collaborators (requires JavaScript rendering)
+        if not driver:
+            self.logger.debug(f"No driver provided, skipping collaborators extraction for {name}")
+            return []
+
+        try:
+            self.logger.debug(f"Starting collaborator extraction for {name}")
+
+            # Try to click the action button if configured (to expand collaborators section)
+            action_selector = selectors.get('collaborators_action')
+            if action_selector:
+                try:
+                    self.logger.debug(f"Looking for collaborators action button: {action_selector}")
+                    button = driver.find_element(By.CSS_SELECTOR, action_selector)
+
+                    # Check if the section is collapsed (aria-expanded="false")
+                    aria_expanded = button.get_attribute('aria-expanded')
+                    self.logger.debug(f"Collaborators section aria-expanded: {aria_expanded}")
+
+                    if aria_expanded == 'false':
+                        self.logger.info(f"Expanding collaborators section for {name}")
+                        if self.click_element(driver, action_selector):
+                            time.sleep(0.5)  # Wait for expansion animation
+                            # Refresh tree after click
+                            tree = lxml_html.fromstring(driver.page_source)
+                except Exception as e:
+                    self.logger.debug(f"Could not interact with collaborators action button: {e}")
+
+            # Try CSS selectors via Selenium first
+            for selector in selectors.get('collaborators', []):
+                try:
+                    if selector.startswith('.') or selector.startswith('#') or selector.startswith('p') or selector.startswith('div'):
+                        # CSS selector - use Selenium
+                        self.logger.debug(f"Trying collaborator CSS selector: {selector}")
+                        elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                        self.logger.debug(f"Found {len(elements)} collaborator elements")
+
+                        for elem in elements:
+                            try:
+                                text = elem.text.strip()
+                                # Filter out empty text and duplicates
+                                if text and text not in collaborators:
+                                    # Skip unwanted entries
+                                    # 1. Skip if contains newlines
+                                    if '\n' in text:
+                                        self.logger.debug(f"Skipping collaborator (contains newline): {text[:50]}")
+                                        continue
+                                    # 2. Skip navigation/UI elements
+                                    if any(keyword in text for keyword in ['trending_up', '·', 'JAX', 'Models', 'Version']):
+                                        self.logger.debug(f"Skipping collaborator (UI element): {text}")
+                                        continue
+                                    # 3. Skip very short text (likely not a name)
+                                    if len(text) <= 2:
+                                        self.logger.debug(f"Skipping collaborator (too short): {text}")
+                                        continue
+                                    # 4. Skip if it's a number or mostly numbers
+                                    if text.replace(' ', '').isdigit():
+                                        self.logger.debug(f"Skipping collaborator (numeric): {text}")
+                                        continue
+
+                                    # Additional filter: ensure it looks like a collaborator entry
+                                    # (contains a name and optionally a role in parentheses)
+                                    if any(keyword in text.lower() for keyword in ['owner', 'editor', 'admin', 'contributor']) or '(' in text:
+                                        collaborators.append(text)
+                                        self.logger.debug(f"Found collaborator: {text}")
+                                    elif len(text) > 2:  # Also accept plain names (already filtered above)
+                                        collaborators.append(text)
+                                        self.logger.debug(f"Found collaborator: {text}")
+                            except Exception as e:
+                                self.logger.debug(f"Error extracting text from element: {e}")
+                                continue
+
+                        if collaborators:
+                            self.logger.info(f"Found {len(collaborators)} collaborators using CSS selector: {selector}")
+                            break
+                    else:
+                        # XPath selector - use lxml
+                        self.logger.debug(f"Trying collaborator XPath selector: {selector}")
+                        elements = tree.xpath(selector)
+                        self.logger.debug(f"Found {len(elements)} collaborator elements via XPath")
+
+                        for elem in elements:
+                            try:
+                                text = elem.text_content().strip()
+                                if text and text not in collaborators:
+                                    # Skip unwanted entries
+                                    # 1. Skip if contains newlines
+                                    if '\n' in text:
+                                        self.logger.debug(f"Skipping collaborator (contains newline): {text[:50]}")
+                                        continue
+                                    # 2. Skip navigation/UI elements
+                                    if any(keyword in text for keyword in ['trending_up', '·', 'JAX', 'Models', 'Version']):
+                                        self.logger.debug(f"Skipping collaborator (UI element): {text}")
+                                        continue
+                                    # 3. Skip very short text (likely not a name)
+                                    if len(text) <= 2:
+                                        self.logger.debug(f"Skipping collaborator (too short): {text}")
+                                        continue
+                                    # 4. Skip if it's a number or mostly numbers
+                                    if text.replace(' ', '').isdigit():
+                                        self.logger.debug(f"Skipping collaborator (numeric): {text}")
+                                        continue
+
+                                    # Same filtering as above
+                                    if any(keyword in text.lower() for keyword in ['owner', 'editor', 'admin', 'contributor']) or '(' in text:
+                                        collaborators.append(text)
+                                        self.logger.debug(f"Found collaborator via XPath: {text}")
+                                    elif len(text) > 2:
+                                        collaborators.append(text)
+                                        self.logger.debug(f"Found collaborator via XPath: {text}")
+                            except Exception as e:
+                                self.logger.debug(f"Error extracting text from XPath element: {e}")
+                                continue
+
+                        if collaborators:
+                            self.logger.info(f"Found {len(collaborators)} collaborators using XPath: {selector}")
+                            break
+
+                except Exception as e:
+                    self.logger.debug(f"Collaborator selector {selector} failed: {e}")
+                    continue
+
+            if collaborators:
+                self.logger.info(f"Successfully extracted {len(collaborators)} collaborators for {name}")
+            else:
+                self.logger.warning(f"Could not find any collaborators for {name}")
+
+        except Exception as e:
+            self.logger.error(f"Error extracting collaborators for {name}: {e}")
+
+        return collaborators
+
+    def extract_authors(self, driver: webdriver.Chrome, tree: lxml_html.HtmlElement,
+                       selectors: Dict, name: str) -> list:
+        """
+        Extract authors using configured selectors
+
+        Args:
+            driver: Selenium driver instance
+            tree: lxml tree object
+            selectors: Selectors configuration dictionary
+            name: Model name for logging
+
+        Returns:
+            List of author names
+        """
+        authors = []
+
+        # If no driver, can't extract authors (requires JavaScript rendering)
+        if not driver:
+            self.logger.debug(f"No driver provided, skipping authors extraction for {name}")
+            return []
+
+        try:
+            self.logger.debug(f"Starting authors extraction for {name}")
+
+            # Try to click the action button if configured (to expand authors section)
+            action_selector = selectors.get('authors_action')
+            if action_selector:
+                try:
+                    self.logger.debug(f"Looking for authors action button: {action_selector}")
+                    button = driver.find_element(By.CSS_SELECTOR, action_selector)
+
+                    # Check if the section is collapsed (aria-expanded="false")
+                    aria_expanded = button.get_attribute('aria-expanded')
+                    self.logger.debug(f"Authors section aria-expanded: {aria_expanded}")
+
+                    if aria_expanded == 'false':
+                        self.logger.info(f"Expanding authors section for {name}")
+                        if self.click_element(driver, action_selector):
+                            time.sleep(0.5)  # Wait for expansion animation
+                            # Refresh tree after click
+                            tree = lxml_html.fromstring(driver.page_source)
+                except Exception as e:
+                    self.logger.debug(f"Could not interact with authors action button: {e}")
+
+            # Try CSS selectors via Selenium first
+            for selector in selectors.get('authors', []):
+                try:
+                    if selector.startswith('.') or selector.startswith('#') or selector.startswith('p') or selector.startswith('div'):
+                        # CSS selector - use Selenium
+                        self.logger.debug(f"Trying authors CSS selector: {selector}")
+                        elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                        self.logger.debug(f"Found {len(elements)} author elements")
+
+                        for elem in elements:
+                            try:
+                                # Get the full text content (includes both anchor text and plain text)
+                                text = elem.text.strip()
+                                if text:
+                                    # Split by common delimiters
+                                    import re
+                                    # Split by commas, but keep text in parentheses together
+                                    parts = re.split(r',\s*(?![^()]*\))', text)
+                                    for part in parts:
+                                        part = part.strip()
+                                        # Clean up and filter
+                                        if part and part not in authors and len(part) > 2:
+                                            # Skip unwanted entries
+                                            # 1. Skip if contains newlines
+                                            if '\n' in part:
+                                                self.logger.debug(f"Skipping author (contains newline): {part[:50]}")
+                                                continue
+                                            # 2. Skip header/label text
+                                            if part in ['Model development contributors', 'Model release contributors and general support', 'NAME']:
+                                                self.logger.debug(f"Skipping author (header text): {part}")
+                                                continue
+                                            # 3. Skip if it's just a URL or common non-author text
+                                            if part.startswith('http') or part.startswith('www.'):
+                                                self.logger.debug(f"Skipping author (URL): {part}")
+                                                continue
+
+                                            authors.append(part)
+                                            self.logger.debug(f"Found author: {part}")
+                            except Exception as e:
+                                self.logger.debug(f"Error extracting text from element: {e}")
+                                continue
+
+                        if authors:
+                            self.logger.info(f"Found {len(authors)} authors using CSS selector: {selector}")
+                            break
+                    else:
+                        # XPath selector - use lxml
+                        self.logger.debug(f"Trying authors XPath selector: {selector}")
+                        elements = tree.xpath(selector)
+                        self.logger.debug(f"Found {len(elements)} author elements via XPath")
+
+                        for elem in elements:
+                            try:
+                                # Get the full text content (includes both anchor text and plain text)
+                                text = elem.text_content().strip()
+                                if text:
+                                    import re
+                                    # Split by commas, but keep text in parentheses together
+                                    parts = re.split(r',\s*(?![^()]*\))', text)
+                                    for part in parts:
+                                        part = part.strip()
+                                        # Clean up and filter
+                                        if part and part not in authors and len(part) > 2:
+                                            # Skip unwanted entries
+                                            # 1. Skip if contains newlines
+                                            if '\n' in part:
+                                                self.logger.debug(f"Skipping author (contains newline): {part[:50]}")
+                                                continue
+                                            # 2. Skip header/label text
+                                            if part in ['Model development contributors', 'Model release contributors and general support', 'NAME']:
+                                                self.logger.debug(f"Skipping author (header text): {part}")
+                                                continue
+                                            # 3. Skip if it's just a URL or common non-author text
+                                            if part.startswith('http') or part.startswith('www.'):
+                                                self.logger.debug(f"Skipping author (URL): {part}")
+                                                continue
+
+                                            authors.append(part)
+                                            self.logger.debug(f"Found author via XPath: {part}")
+                            except Exception as e:
+                                self.logger.debug(f"Error extracting text from XPath element: {e}")
+                                continue
+
+                        if authors:
+                            self.logger.info(f"Found {len(authors)} authors using XPath: {selector}")
+                            break
+
+                except Exception as e:
+                    self.logger.debug(f"Authors selector {selector} failed: {e}")
+                    continue
+
+            if authors:
+                self.logger.info(f"Successfully extracted {len(authors)} authors for {name}")
+            else:
+                self.logger.warning(f"Could not find any authors for {name}")
+
+        except Exception as e:
+            self.logger.error(f"Error extracting authors for {name}: {e}")
+
+        return authors
+
     def wait_for_element(self, driver: webdriver.Chrome, selector: str, 
                         by: By = By.CSS_SELECTOR, timeout: int = 10) -> Optional[any]:
         """

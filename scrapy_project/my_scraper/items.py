@@ -24,6 +24,7 @@ class KaggleMetadataItem(scrapy.Item):
     tags = scrapy.Field()
     model_card = scrapy.Field()
     transformers_variations = scrapy.Field()  # List of TransformersVariationItem
+    model_metadata = scrapy.Field()  # Array containing collaborators and other metadata
 
 
 class TransformersVariationItem(scrapy.Item):

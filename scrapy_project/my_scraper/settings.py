@@ -67,7 +67,6 @@ DOWNLOADER_MIDDLEWARES = {
 ITEM_PIPELINES = {
     'my_scraper.pipelines.DataCleaningPipeline': 100,
     'my_scraper.pipelines.JsonExportPipeline': 300,
-    'my_scraper.pipelines.CsvExportPipeline': 400,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -105,21 +104,6 @@ SELENIUM_DRIVER_ARGUMENTS = [
     '--disable-dev-shm-usage',
     '--disable-blink-features=AutomationControlled'
 ]
-
-# Output settings
-FEEDS = {
-    'output/%(name)s_%(time)s.json': {
-        'format': 'json',
-        'encoding': 'utf8',
-        'indent': 2,
-        'overwrite': False,
-    },
-    'output/%(name)s_%(time)s.csv': {
-        'format': 'csv',
-        'encoding': 'utf8',
-        'overwrite': False,
-    }
-}
 
 # Set settings whose default value is deprecated to a future-proof value
 REQUEST_FINGERPRINTER_IMPLEMENTATION = '2.7'

@@ -171,6 +171,14 @@ class KaggleMetadataSpider(BaseSpider):
                 temp_driver, self.selectors, model_name, model_id
             )
 
+            # Extract collaborators and authors, then build model_metadata
+            collaborators = self.extract_collaborators(temp_driver, tree, self.selectors, model_name)
+            authors = self.extract_authors(temp_driver, tree, self.selectors, model_name)
+            item['model_metadata'] = {
+                'collaborators': collaborators,
+                'authors': authors
+            }
+
             # Log concise summary
             self.logger.info(f"✓ {model_name} - Downloads: {item['downloads']}")
 

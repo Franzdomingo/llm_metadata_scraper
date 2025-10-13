@@ -4,11 +4,9 @@ Item pipelines for processing scraped data
 This module contains pipelines for:
 - Data cleaning and validation
 - Export to JSON
-- Export to CSV
 """
 
 import json
-import csv
 import os
 import logging
 from datetime import datetime
@@ -24,25 +22,36 @@ class DataCleaningPipeline:
     def process_item(self, item, spider):
         """
         Clean item data
-        
+
         Args:
             item: Scraped item
             spider: Spider instance
-            
+
         Returns:
             Cleaned item
         """
         adapter = ItemAdapter(item)
-        
+
         # Clean text fields
         text_fields = ['name', 'short_description', 'downloads', 'tags', 'model_card']
-        
+
         for field in text_fields:
             if field in adapter:
                 value = adapter.get(field)
                 if isinstance(value, str):
                     adapter[field] = clean_text(value)
-        
+
+        # Clean model_metadata if present
+        if 'model_metadata' in adapter:
+            metadata = adapter.get('model_metadata')
+            if isinstance(metadata, dict):
+                # Clean collaborators list if present
+                if 'collaborators' in metadata and isinstance(metadata['collaborators'], list):
+                    metadata['collaborators'] = [
+                        clean_text(collab) if isinstance(collab, str) else collab
+                        for collab in metadata['collaborators']
+                    ]
+
         return item
 
 
@@ -83,48 +92,3 @@ class JsonExportPipeline:
         return item
 
 
-class CsvExportPipeline:
-    """
-    Pipeline to export items to CSV file
-    """
-    
-    def __init__(self):
-        self.file = None
-        self.writer = None
-        self.fields = None
-        
-    def open_spider(self, spider):
-        """Initialize when spider opens"""
-        # Create output directory if it doesn't exist
-        output_dir = 'output'
-        os.makedirs(output_dir, exist_ok=True)
-
-        # Create filename with timestamp
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f'{output_dir}/{spider.name}_{timestamp}.csv'
-
-        self.filename = filename
-        self.file = open(filename, 'w', newline='', encoding='utf-8')
-        self.item_count = 0
-
-    def close_spider(self, spider):
-        """Close file when spider closes"""
-        if self.file:
-            self.file.close()
-            logging.info(f'Saved {self.item_count} items to {self.filename}')
-    
-    def process_item(self, item, spider):
-        """Write item to CSV"""
-        adapter = ItemAdapter(item)
-
-        # Initialize writer with fields from first item
-        if not self.writer:
-            self.fields = list(adapter.keys())
-            self.writer = csv.DictWriter(self.file, fieldnames=self.fields)
-            self.writer.writeheader()
-
-        # Write row
-        self.writer.writerow(adapter.asdict())
-        self.item_count += 1
-
-        return item

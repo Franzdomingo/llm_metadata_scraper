@@ -24,7 +24,8 @@ CREATE TABLE model_tags (
 );
 
 -- Table for metadata fields
-CREATE TABLE model_metadata (
+CREATE TABLE 
+ (
     model_id INT REFERENCES kaggle_models(id) ON DELETE CASCADE PRIMARY KEY,
     collaborators TEXT[], -- array of collaborator names
     authors TEXT[],       -- array of metadata authors
