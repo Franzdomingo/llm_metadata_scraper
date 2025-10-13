@@ -20,6 +20,7 @@ from my_scraper.selectors.site_selectors import get_selectors_for_site
 from my_scraper.extractors.selenium_utils import parse_tree_from_response, click_element
 from my_scraper.extractors.description_extractor import extract_description
 from my_scraper.extractors.downloads_extractor import extract_downloads
+from my_scraper.extractors.usability_extractor import extract_usability
 from my_scraper.extractors.tags_extractor import extract_tags
 from my_scraper.extractors.collaborators_extractor import extract_collaborators
 from my_scraper.extractors.authors_extractor import extract_authors
@@ -169,6 +170,7 @@ class KaggleMetadataSpider(scrapy.Spider):
             # Extract using temp_driver which has the correct HTML loaded
             item['short_description'] = extract_description(temp_driver, tree, self.selectors, model_name)
             item['downloads'] = extract_downloads(temp_driver, tree, self.selectors, model_name)
+            item['usability'] = extract_usability(temp_driver, tree, self.selectors, model_name)
             item['tags'] = extract_tags(temp_driver, tree, self.selectors, model_name)
             item['model_card'] = self.extract_model_card(temp_driver, tree, self.selectors, model_name)
             item['transformers_variations'] = self.extract_transformers_variations(

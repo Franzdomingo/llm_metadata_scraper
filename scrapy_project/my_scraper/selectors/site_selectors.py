@@ -41,6 +41,18 @@ class KaggleSelectors:
         '//span[contains(@class, "sc-hoocXy") and contains(@class, "eqfbZr")]',
         '//span[contains(@class, "iPCsnU") and contains(@class, "eqfbZr")]'
     ]
+
+    # Usability score selectors - ordered by priority
+    # CSS selectors first (for Selenium), then XPath (for lxml)
+    # Target: p element containing usability score
+    USABILITY_SELECTORS: List[str] = [
+        # CSS selector - user-provided selector
+        'p.sc-hwddKA:nth-child(5)',
+        # Fallback - broader class match
+        'p.sc-hwddKA',
+        # XPath fallback
+        '//p[contains(@class, "sc-hwddKA")]'
+    ]
     
     # Tag selectors - ordered by priority (based on actual HTML structure)
     TAG_SELECTORS: List[str] = [
@@ -173,6 +185,7 @@ def get_selectors_for_site(site: str) -> Dict:
         'kaggle': {
             'description': KaggleSelectors.DESCRIPTION_SELECTORS,
             'downloads': KaggleSelectors.DOWNLOAD_SELECTORS,
+            'usability': KaggleSelectors.USABILITY_SELECTORS,
             'description_css_fallback': KaggleSelectors.DESCRIPTION_CSS_FALLBACK,
             'model_card_selectors': KaggleSelectors.MODEL_CARD_SELECTORS,
             'model_card_action': KaggleSelectors.MODEL_CARD_ACTION_BUTTON,

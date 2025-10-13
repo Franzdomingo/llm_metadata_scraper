@@ -21,6 +21,7 @@ class KaggleMetadataItem(scrapy.Item):
     kaggle_url = scrapy.Field()
     short_description = scrapy.Field()
     downloads = scrapy.Field()
+    usability = scrapy.Field()
     tags = scrapy.Field()
     model_card = scrapy.Field()
     transformers_variations = scrapy.Field()  # List of TransformersVariationItem
