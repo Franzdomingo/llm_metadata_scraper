@@ -8,16 +8,25 @@ import time
 import csv
 import os
 from typing import Dict, List, Optional
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from lxml import html as lxml_html
-from my_scraper.spiders.base_spider import BaseSpider
 from my_scraper.items import KaggleMetadataItem, TransformersVariationItem
 from my_scraper.utils import html_to_text
+from my_scraper.selectors.site_selectors import get_selectors_for_site
+from my_scraper.extractors.selenium_utils import parse_tree_from_response, click_element
+from my_scraper.extractors.description_extractor import extract_description
+from my_scraper.extractors.downloads_extractor import extract_downloads
+from my_scraper.extractors.tags_extractor import extract_tags
+from my_scraper.extractors.collaborators_extractor import extract_collaborators
+from my_scraper.extractors.authors_extractor import extract_authors
+from my_scraper.extractors.provenance_extractor import extract_provenance
 
 
-class KaggleMetadataSpider(BaseSpider):
+class KaggleMetadataSpider(scrapy.Spider):
     """
     Spider to scrape Kaggle model metadata
     
@@ -31,23 +40,21 @@ class KaggleMetadataSpider(BaseSpider):
     
     name = 'kaggle_metadata'
     allowed_domains = ['kaggle.com']
-    
-    # Use Kaggle selectors
-    site_key = 'kaggle'
-    
+
     custom_settings = {
         'CONCURRENT_REQUESTS': 1,  # Process one at a time to avoid rate limiting
         'DOWNLOAD_DELAY': 1.5,
     }
-    
+
     def __init__(self, input_file=None, *args, **kwargs):
         """
         Initialize spider
-        
+
         Args:
             input_file: Path to CSV file with model URLs (default: output/kaggle_output.csv)
         """
         super().__init__(*args, **kwargs)
+        self.selectors = get_selectors_for_site('kaggle')
         
         # Determine input file path
         if input_file:
@@ -129,9 +136,6 @@ class KaggleMetadataSpider(BaseSpider):
         Yields:
             KaggleMetadataItem with extracted metadata
         """
-        from selenium import webdriver
-        from selenium.webdriver.chrome.options import Options
-
         model_name = response.meta.get('model_name', '')
         model_id = response.meta.get('model_id', 0)
 
@@ -154,7 +158,7 @@ class KaggleMetadataSpider(BaseSpider):
             time.sleep(2)
 
             # Parse tree from the temp driver's page source
-            tree = self.parse_tree_from_response(response)
+            tree = parse_tree_from_response(response)
 
             # Create item
             item = KaggleMetadataItem()
@@ -163,18 +167,18 @@ class KaggleMetadataSpider(BaseSpider):
             item['kaggle_url'] = response.url
 
             # Extract using temp_driver which has the correct HTML loaded
-            item['short_description'] = self.extract_description(temp_driver, tree, self.selectors, model_name)
-            item['downloads'] = self.extract_downloads(temp_driver, tree, self.selectors, model_name)
-            item['tags'] = self.extract_tags(temp_driver, tree, self.selectors, model_name)
+            item['short_description'] = extract_description(temp_driver, tree, self.selectors, model_name)
+            item['downloads'] = extract_downloads(temp_driver, tree, self.selectors, model_name)
+            item['tags'] = extract_tags(temp_driver, tree, self.selectors, model_name)
             item['model_card'] = self.extract_model_card(temp_driver, tree, self.selectors, model_name)
             item['transformers_variations'] = self.extract_transformers_variations(
                 temp_driver, self.selectors, model_name, model_id
             )
 
             # Extract collaborators, authors, and provenance, then build model_metadata
-            collaborators = self.extract_collaborators(temp_driver, tree, self.selectors, model_name)
-            authors = self.extract_authors(temp_driver, tree, self.selectors, model_name)
-            provenance = self.extract_provenance(temp_driver, tree, self.selectors, model_name)
+            collaborators = extract_collaborators(temp_driver, tree, self.selectors, model_name)
+            authors = extract_authors(temp_driver, tree, self.selectors, model_name)
+            provenance = extract_provenance(temp_driver, tree, self.selectors, model_name)
             item['model_metadata'] = {
                 'collaborators': collaborators,
                 'authors': authors,
@@ -209,7 +213,7 @@ class KaggleMetadataSpider(BaseSpider):
         action_selector = selectors.get('model_card_action')
         if action_selector:
             try:
-                if self.click_element(driver, action_selector):
+                if click_element(driver, action_selector):
                     time.sleep(1)
                     # Refresh tree after click (using driver's page source)
                     tree = lxml_html.fromstring(driver.page_source)
@@ -298,7 +302,7 @@ class KaggleMetadataSpider(BaseSpider):
         # Try to click the action that reveals the list
         if action_selector:
             try:
-                if self.click_element(driver, action_selector):
+                if click_element(driver, action_selector):
                     time.sleep(0.5)
             except Exception:
                 pass

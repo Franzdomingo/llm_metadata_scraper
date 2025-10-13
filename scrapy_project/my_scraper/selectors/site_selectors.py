@@ -74,12 +74,14 @@ class KaggleSelectors:
 
     # Authors selectors - ordered by priority
     # Target: p element containing authors/contributors information
+    # NOTE: Authors section is typically div.sc-bBhMX:nth-child(2)
+    # Avoid using 'p.sc-gGKoUb.bEqAGC' as fallback - it matches collaborators!
     AUTHORS_SELECTORS: List[str] = [
-        # Most specific - target the authors container
+        # Most specific - target the authors container (2nd sc-bBhMX div)
         'div.sc-bBhMX:nth-child(2) > div:nth-child(2)',
-        # Alternative - target p elements with authors class
-        'p.sc-gGKoUb.bEqAGC',
-        # Fallback - XPath
+        # Alternative - target p elements ONLY within 2nd sc-bBhMX div
+        'div.sc-bBhMX:nth-child(2) p.sc-gGKoUb',
+        # Fallback - XPath targeting specifically the 2nd sc-bBhMX section
         '//div[contains(@class, "sc-bBhMX")][2]//p[contains(@class, "sc-gGKoUb")]'
     ]
 
