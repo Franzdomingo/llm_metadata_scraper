@@ -155,9 +155,12 @@ class KaggleSelectors:
     # Target: span element with classes for download count
     TRANSFORMERS_VARIATION_DOWNLOADS: str = 'span.sc-kCuUfV.sc-hoocXy.iPCsnU.eqfbZr'
 
-    # License selector (appears after selecting a variation)
-    # Target: a element with aria-label containing license info
-    TRANSFORMERS_VARIATION_LICENSE: str = 'a.sc-bbbBoY.hzCdJV'
+    # License selectors (appears after selecting a variation)
+    # License can appear in different formats (link or plain text)
+    TRANSFORMERS_VARIATION_LICENSE_SELECTORS: List[str] = [
+        'a.sc-bbbBoY.hzCdJV',  # Link format (e.g., "Apache 2.0")
+        'p.sc-gGKoUb.bEqAGC',  # Plain text format (e.g., "Gemma")
+    ]
     
     # Fallback CSS selector for description (used with Selenium)
     DESCRIPTION_CSS_FALLBACK: str = '.sc-fhfEft > p:nth-child(2)'
@@ -224,7 +227,7 @@ def get_selectors_for_site(site: str) -> Dict:
             'transformers_variation_selected_name': KaggleSelectors.TRANSFORMERS_VARIATION_SELECTED_NAME,
             'transformers_variation_version': KaggleSelectors.TRANSFORMERS_VARIATION_VERSION,
             'transformers_variation_downloads': KaggleSelectors.TRANSFORMERS_VARIATION_DOWNLOADS,
-            'transformers_variation_license': KaggleSelectors.TRANSFORMERS_VARIATION_LICENSE,
+            'transformers_variation_license': KaggleSelectors.TRANSFORMERS_VARIATION_LICENSE_SELECTORS,
             'tags': KaggleSelectors.TAG_SELECTORS,
             'tag_links': KaggleSelectors.TAG_LINK_SELECTOR,
             'tag_more_button_span': KaggleSelectors.TAG_MORE_BUTTON_TEXT_SPAN,
