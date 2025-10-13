@@ -5,12 +5,13 @@ Scrapes LLM model names and URLs from Kaggle models page
 
 import scrapy
 from selenium.webdriver.common.by import By
-from my_scraper.spiders.base_spider import BaseSpider
 from my_scraper.items import KaggleModelItem
 from my_scraper.utils import extract_model_name_from_url, build_full_url
+from my_scraper.selectors.site_selectors import get_selectors_for_site
+from my_scraper.extractors.selenium_utils import get_driver_from_response, parse_tree_from_response, click_element
 
 
-class KaggleLinksSpider(BaseSpider):
+class KaggleLinksSpider(scrapy.Spider):
     """
     Spider to scrape Kaggle model links
     
@@ -20,19 +21,16 @@ class KaggleLinksSpider(BaseSpider):
     name = 'kaggle_links'
     allowed_domains = ['kaggle.com']
     start_urls = ['https://www.kaggle.com/models?owner-type=organization']
-    
-    # Use Kaggle selectors
-    site_key = 'kaggle'
-    
+
     custom_settings = {
         'CONCURRENT_REQUESTS': 1,  # Single request at a time for pagination
         'DOWNLOAD_DELAY': 2.0,
     }
-    
+
     def __init__(self, max_pages=100, *args, **kwargs):
         """
         Initialize spider
-        
+
         Args:
             max_pages: Maximum number of pages to scrape (default: 100)
         """
@@ -40,6 +38,7 @@ class KaggleLinksSpider(BaseSpider):
         self.max_pages = int(max_pages)
         self.current_page = 1
         self.seen_urls = set()
+        self.selectors = get_selectors_for_site('kaggle')
     
     def start_requests(self):
         """Generate initial request with Selenium enabled"""
@@ -67,13 +66,13 @@ class KaggleLinksSpider(BaseSpider):
             KaggleModelItem for each model found
             Request for next page if available
         """
-        driver = self.get_driver_from_response(response)
+        driver = get_driver_from_response(response)
         page_num = response.meta.get('page_num', 1)
-        
+
         self.logger.info(f'Parsing page {page_num}')
-        
+
         # Parse the page content
-        tree = self.parse_tree_from_response(response)
+        tree = parse_tree_from_response(response)
         
         # Extract model links using configured selector
         model_links_xpath = self.selectors.get('model_links_xpath')
@@ -186,11 +185,11 @@ class KaggleLinksSpider(BaseSpider):
         try:
             # Try primary next button selector
             next_button_xpath = self.selectors.get('next_button_xpath')
-            return self.click_element(driver, next_button_xpath, By.XPATH)
+            return click_element(driver, next_button_xpath, By.XPATH)
         except Exception:
             try:
                 # Try alternative next button selector
                 next_button_alt_xpath = self.selectors.get('next_button_alt_xpath')
-                return self.click_element(driver, next_button_alt_xpath, By.XPATH)
+                return click_element(driver, next_button_alt_xpath, By.XPATH)
             except Exception:
                 return False

@@ -33,7 +33,7 @@ class DataCleaningPipeline:
         adapter = ItemAdapter(item)
 
         # Clean text fields
-        text_fields = ['name', 'short_description', 'downloads', 'tags', 'model_card']
+        text_fields = ['name', 'short_description', 'downloads', 'usability', 'tags', 'model_card']
 
         for field in text_fields:
             if field in adapter:

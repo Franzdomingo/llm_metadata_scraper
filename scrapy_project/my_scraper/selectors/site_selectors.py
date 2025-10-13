@@ -41,6 +41,18 @@ class KaggleSelectors:
         '//span[contains(@class, "sc-hoocXy") and contains(@class, "eqfbZr")]',
         '//span[contains(@class, "iPCsnU") and contains(@class, "eqfbZr")]'
     ]
+
+    # Usability score selectors - ordered by priority
+    # CSS selectors first (for Selenium), then XPath (for lxml)
+    # Target: p element containing usability score
+    USABILITY_SELECTORS: List[str] = [
+        # CSS selector - user-provided selector
+        'p.sc-hwddKA:nth-child(5)',
+        # Fallback - broader class match
+        'p.sc-hwddKA',
+        # XPath fallback
+        '//p[contains(@class, "sc-hwddKA")]'
+    ]
     
     # Tag selectors - ordered by priority (based on actual HTML structure)
     TAG_SELECTORS: List[str] = [
@@ -52,6 +64,12 @@ class KaggleSelectors:
     
     # Individual tag link selector
     TAG_LINK_SELECTOR: str = 'a.sc-hZpmlk.kpuQUO'
+
+    # Tags "more" button selectors (for expanding hidden tags)
+    TAG_MORE_BUTTON_TEXT_SPAN: str = 'span.eWEDa-d'  # Span containing "X more" text
+    TAG_MORE_POPUP_CONTAINER: str = '.eqXpEC'  # Popup container that appears when "more" is clicked
+    TAG_POPUP_CHECKBOX_BUTTON: str = 'button[role="checkbox"]'  # Tag buttons within popup
+    TAG_POPUP_TEXT_SPAN: str = 'span.bMbEZO'  # Span containing tag text within popup buttons
 
     # Collaborators action button (to expand/collapse the section if needed)
     COLLABORATORS_ACTION_BUTTON: str = 'div.sc-bBhMX:nth-child(1) > div:nth-child(1) > button:nth-child(2)'
@@ -74,12 +92,14 @@ class KaggleSelectors:
 
     # Authors selectors - ordered by priority
     # Target: p element containing authors/contributors information
+    # NOTE: Authors section is typically div.sc-bBhMX:nth-child(2)
+    # Avoid using 'p.sc-gGKoUb.bEqAGC' as fallback - it matches collaborators!
     AUTHORS_SELECTORS: List[str] = [
-        # Most specific - target the authors container
+        # Most specific - target the authors container (2nd sc-bBhMX div)
         'div.sc-bBhMX:nth-child(2) > div:nth-child(2)',
-        # Alternative - target p elements with authors class
-        'p.sc-gGKoUb.bEqAGC',
-        # Fallback - XPath
+        # Alternative - target p elements ONLY within 2nd sc-bBhMX div
+        'div.sc-bBhMX:nth-child(2) p.sc-gGKoUb',
+        # Fallback - XPath targeting specifically the 2nd sc-bBhMX section
         '//div[contains(@class, "sc-bBhMX")][2]//p[contains(@class, "sc-gGKoUb")]'
     ]
 
@@ -106,10 +126,57 @@ class KaggleSelectors:
     MODEL_CARD_ACTION_BUTTON: str = '.sc-kHBIib > span:nth-child(2)'
     
     # Transformers variation dropdown action selector (click to open the list)
-    TRANSFORMERS_VARIATION_ACTION: str = '.MuiSelect-iconOutlined'
-    
-    # Transformers variation list item selector (the specific list item text to capture)
-    TRANSFORMERS_VARIATION_ITEM: str = 'li.MuiButtonBase-root:nth-child(1) > div:nth-child(1) > p:nth-child(1)'
+    # Target: The combobox button with aria-label="Select Variation"
+    TRANSFORMERS_VARIATION_ACTION: str = 'div[role="combobox"][aria-label="Select Variation"]'
+
+    # Transformers variation list container (the opened dropdown)
+    # Target: ul element with role="listbox" that contains all variation options
+    TRANSFORMERS_VARIATION_LIST_CONTAINER: str = 'ul[role="listbox"]'
+
+    # Transformers variation list item selector (all list items in the dropdown)
+    # Target: li elements with role="option" within the opened listbox
+    TRANSFORMERS_VARIATION_LIST_ITEMS: str = 'li[role="option"]'
+
+    # Transformers variation name selector (text within each list item in dropdown)
+    # Target: div with class "sc-jaGrhB hYa-DAr" containing the variation name
+    TRANSFORMERS_VARIATION_NAME: str = 'div.sc-jaGrhB.hYa-DAr'
+
+    # Transformers variation details selectors (after clicking a variation)
+    # These appear after selecting a variation from the dropdown
+
+    # Selected variation name (appears in the selected state)
+    TRANSFORMERS_VARIATION_SELECTED_NAME: str = 'div.sc-jaGrhB.hYa-DAr'
+
+    # Version selector (appears after selecting a variation)
+    # Target: a element with class "sc-eVqvcJ iRcjJz" containing version info
+    TRANSFORMERS_VARIATION_VERSION: str = 'a.sc-eVqvcJ.iRcjJz'
+
+    # Downloads selector (appears after selecting a variation)
+    # Target: span element with classes for download count
+    TRANSFORMERS_VARIATION_DOWNLOADS: str = 'span.sc-kCuUfV.sc-hoocXy.iPCsnU.eqfbZr'
+
+    # License selectors (appears after selecting a variation)
+    # License can appear in different formats (link or plain text)
+    TRANSFORMERS_VARIATION_LICENSE_SELECTORS: List[str] = [
+        'a.sc-bbbBoY.hzCdJV',  # Link format (e.g., "Apache 2.0")
+        'p.sc-gGKoUb.bEqAGC',  # Plain text format (e.g., "Gemma")
+    ]
+
+    # Model card selector for variation (appears after selecting a variation)
+    # Target: div element containing the full model card with description, training data, etc.
+    TRANSFORMERS_VARIATION_MODEL_CARD_SELECTORS: List[str] = [
+        'div.sc-lkCrJH:nth-child(3)',  # Third sc-lkCrJH div (model card section)
+        'div.sc-lkCrJH.ghmUBs',  # With specific class
+        'div.sc-lkCrJH',  # Fallback - any sc-lkCrJH div
+    ]
+
+    # Is Finetunable selector for variation (appears after selecting a variation)
+    # Target: p element with "Yes" or "No" indicating if the model is finetunable
+    # Note: Uses same class as license plain text, need to differentiate by context/position
+    TRANSFORMERS_IS_FINETUNABLE_SELECTORS: List[str] = [
+        'p.sc-gGKoUb.bEqAGC[style*="margin-top"]',  # With margin-top style
+        'p.sc-gGKoUb.bEqAGC',  # Fallback - may match multiple, need to filter
+    ]
     
     # Fallback CSS selector for description (used with Selenium)
     DESCRIPTION_CSS_FALLBACK: str = '.sc-fhfEft > p:nth-child(2)'
@@ -165,13 +232,26 @@ def get_selectors_for_site(site: str) -> Dict:
         'kaggle': {
             'description': KaggleSelectors.DESCRIPTION_SELECTORS,
             'downloads': KaggleSelectors.DOWNLOAD_SELECTORS,
+            'usability': KaggleSelectors.USABILITY_SELECTORS,
             'description_css_fallback': KaggleSelectors.DESCRIPTION_CSS_FALLBACK,
             'model_card_selectors': KaggleSelectors.MODEL_CARD_SELECTORS,
             'model_card_action': KaggleSelectors.MODEL_CARD_ACTION_BUTTON,
             'transformers_variation_action': KaggleSelectors.TRANSFORMERS_VARIATION_ACTION,
-            'transformers_variation_item': KaggleSelectors.TRANSFORMERS_VARIATION_ITEM,
+            'transformers_variation_list_container': KaggleSelectors.TRANSFORMERS_VARIATION_LIST_CONTAINER,
+            'transformers_variation_list_items': KaggleSelectors.TRANSFORMERS_VARIATION_LIST_ITEMS,
+            'transformers_variation_name': KaggleSelectors.TRANSFORMERS_VARIATION_NAME,
+            'transformers_variation_selected_name': KaggleSelectors.TRANSFORMERS_VARIATION_SELECTED_NAME,
+            'transformers_variation_version': KaggleSelectors.TRANSFORMERS_VARIATION_VERSION,
+            'transformers_variation_downloads': KaggleSelectors.TRANSFORMERS_VARIATION_DOWNLOADS,
+            'transformers_variation_license': KaggleSelectors.TRANSFORMERS_VARIATION_LICENSE_SELECTORS,
+            'transformers_variation_model_card': KaggleSelectors.TRANSFORMERS_VARIATION_MODEL_CARD_SELECTORS,
+            'transformers_is_finetunable': KaggleSelectors.TRANSFORMERS_IS_FINETUNABLE_SELECTORS,
             'tags': KaggleSelectors.TAG_SELECTORS,
             'tag_links': KaggleSelectors.TAG_LINK_SELECTOR,
+            'tag_more_button_span': KaggleSelectors.TAG_MORE_BUTTON_TEXT_SPAN,
+            'tag_more_popup': KaggleSelectors.TAG_MORE_POPUP_CONTAINER,
+            'tag_popup_checkbox': KaggleSelectors.TAG_POPUP_CHECKBOX_BUTTON,
+            'tag_popup_text_span': KaggleSelectors.TAG_POPUP_TEXT_SPAN,
             'collaborators': KaggleSelectors.COLLABORATORS_SELECTORS,
             'collaborators_action': KaggleSelectors.COLLABORATORS_ACTION_BUTTON,
             'authors': KaggleSelectors.AUTHORS_SELECTORS,
