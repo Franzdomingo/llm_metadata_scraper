@@ -496,13 +496,12 @@ class BaseSpider(scrapy.Spider):
                                         continue
 
                                     # Additional filter: ensure it looks like a collaborator entry
-                                    # (contains a name and optionally a role in parentheses)
-                                    if any(keyword in text.lower() for keyword in ['owner', 'editor', 'admin', 'contributor']) or '(' in text:
+                                    # MUST have format "name (role)" with role in parentheses
+                                    if '(' in text and ')' in text:
                                         collaborators.append(text)
                                         self.logger.debug(f"Found collaborator: {text}")
-                                    elif len(text) > 2:  # Also accept plain names (already filtered above)
-                                        collaborators.append(text)
-                                        self.logger.debug(f"Found collaborator: {text}")
+                                    else:
+                                        self.logger.debug(f"Skipping collaborator (no role in parentheses): {text}")
                             except Exception as e:
                                 self.logger.debug(f"Error extracting text from element: {e}")
                                 continue
@@ -538,13 +537,12 @@ class BaseSpider(scrapy.Spider):
                                         self.logger.debug(f"Skipping collaborator (numeric): {text}")
                                         continue
 
-                                    # Same filtering as above
-                                    if any(keyword in text.lower() for keyword in ['owner', 'editor', 'admin', 'contributor']) or '(' in text:
+                                    # Same filtering as above - MUST have format "name (role)"
+                                    if '(' in text and ')' in text:
                                         collaborators.append(text)
                                         self.logger.debug(f"Found collaborator via XPath: {text}")
-                                    elif len(text) > 2:
-                                        collaborators.append(text)
-                                        self.logger.debug(f"Found collaborator via XPath: {text}")
+                                    else:
+                                        self.logger.debug(f"Skipping collaborator (no role in parentheses): {text}")
                             except Exception as e:
                                 self.logger.debug(f"Error extracting text from XPath element: {e}")
                                 continue
