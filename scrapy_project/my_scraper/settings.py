@@ -91,7 +91,7 @@ AUTOTHROTTLE_DEBUG = False
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 # Logging settings
-LOG_LEVEL = 'INFO'  # INFO level for cleaner output, change to DEBUG for troubleshooting
+LOG_LEVEL = 'INFO' 
 LOG_FORMAT = '[%(asctime)s] %(levelname)s: %(message)s'
 LOG_DATEFORMAT = '%H:%M:%S'
 
