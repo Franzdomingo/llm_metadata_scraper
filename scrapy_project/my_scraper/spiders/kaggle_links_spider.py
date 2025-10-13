@@ -118,6 +118,10 @@ class KaggleLinksSpider(scrapy.Spider):
         
         # Check if there's a next page and we haven't reached max_pages
         if page_num < self.max_pages:
+            import time
+            # Small delay to ensure page is fully loaded before checking for next button
+            time.sleep(1)
+            
             has_next = self.check_next_page(driver)
             
             if has_next:
@@ -125,7 +129,6 @@ class KaggleLinksSpider(scrapy.Spider):
                 
                 # Click next button
                 if self.click_next_page(driver):
-                    import time
                     time.sleep(2)  # Wait for page to load
                     
                     # Create new request for the next page
@@ -158,19 +161,34 @@ class KaggleLinksSpider(scrapy.Spider):
         Returns:
             True if next page is available, False otherwise
         """
-        try:
-            # Try primary next button selector
-            next_button_xpath = self.selectors.get('next_button_xpath')
-            next_button = driver.find_element(By.XPATH, next_button_xpath)
-            return next_button.is_enabled() and next_button.is_displayed()
-        except Exception:
+        # Try multiple selectors to find the next button
+        selectors = [
+            (By.XPATH, self.selectors.get('next_button_xpath')),
+            (By.XPATH, self.selectors.get('next_button_alt_xpath')),
+            (By.CSS_SELECTOR, 'button[aria-label="Go to next page"]'),
+            (By.XPATH, '//button[@aria-label="Go to next page"]'),
+            (By.CSS_SELECTOR, 'button.MuiPaginationItem-previousNext:not([disabled])'),
+        ]
+        
+        for by_type, selector in selectors:
             try:
-                # Try alternative next button selector
-                next_button_alt_xpath = self.selectors.get('next_button_alt_xpath')
-                next_button = driver.find_element(By.XPATH, next_button_alt_xpath)
-                return next_button.is_enabled() and next_button.is_displayed()
-            except Exception:
-                return False
+                next_button = driver.find_element(by_type, selector)
+                # Check if button is enabled, displayed, and not disabled
+                is_available = (
+                    next_button.is_enabled() and 
+                    next_button.is_displayed() and
+                    'disabled' not in next_button.get_attribute('class').lower() and
+                    next_button.get_attribute('disabled') != 'true'
+                )
+                if is_available:
+                    self.logger.debug(f'Next button found and available using {by_type}: {selector}')
+                    return True
+            except Exception as e:
+                self.logger.debug(f'Could not find next button with {by_type}: {selector} - {e}')
+                continue
+        
+        self.logger.debug('No available next button found')
+        return False
     
     def click_next_page(self, driver) -> bool:
         """
@@ -182,14 +200,47 @@ class KaggleLinksSpider(scrapy.Spider):
         Returns:
             True if clicked successfully, False otherwise
         """
-        try:
-            # Try primary next button selector
-            next_button_xpath = self.selectors.get('next_button_xpath')
-            return click_element(driver, next_button_xpath, By.XPATH)
-        except Exception:
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        from my_scraper.extractors.selenium_utils import scroll_element_into_view
+        
+        # Try multiple strategies to click the next button
+        selectors = [
+            # Primary selectors from config
+            (By.XPATH, self.selectors.get('next_button_xpath')),
+            (By.XPATH, self.selectors.get('next_button_alt_xpath')),
+            # Additional fallback selectors
+            (By.CSS_SELECTOR, 'button[aria-label="Go to next page"]'),
+            (By.XPATH, '//button[@aria-label="Go to next page"]'),
+            (By.CSS_SELECTOR, 'button.MuiPaginationItem-previousNext:not([disabled])'),
+            (By.XPATH, '//nav//button[contains(@class, "MuiPaginationItem-previousNext") and not(@disabled)]'),
+        ]
+        
+        for by_type, selector in selectors:
             try:
-                # Try alternative next button selector
-                next_button_alt_xpath = self.selectors.get('next_button_alt_xpath')
-                return click_element(driver, next_button_alt_xpath, By.XPATH)
-            except Exception:
-                return False
+                # Wait for element to be present and clickable
+                wait = WebDriverWait(driver, 5)
+                element = wait.until(EC.element_to_be_clickable((by_type, selector)))
+                
+                # Scroll element into view
+                scroll_element_into_view(driver, element, block='center')
+                
+                # Try regular click first
+                try:
+                    element.click()
+                    self.logger.info(f'Successfully clicked next button using {by_type}: {selector}')
+                    return True
+                except Exception as click_error:
+                    # Try JavaScript click as fallback
+                    self.logger.debug(f'Regular click failed, trying JS click: {click_error}')
+                    driver.execute_script("arguments[0].click();", element)
+                    self.logger.info(f'Successfully clicked next button via JS using {by_type}: {selector}')
+                    return True
+                    
+            except Exception as e:
+                self.logger.debug(f'Failed to click with {by_type}: {selector} - {e}')
+                continue
+        
+        # All strategies failed
+        self.logger.error('All next button click strategies failed')
+        return False
