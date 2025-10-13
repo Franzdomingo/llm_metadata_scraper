@@ -174,6 +174,7 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
         version_selector = selectors.get('transformers_variation_version')
         downloads_selector = selectors.get('transformers_variation_downloads')
         license_selector = selectors.get('transformers_variation_license')
+        model_card_selector = selectors.get('transformers_variation_model_card')
 
         logger.info(f"Using selectors - action: {action_selector}, list_items: {list_items_selector}")
 
@@ -344,6 +345,7 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                 variation_version = ''
                 variation_downloads = ''
                 variation_license = ''
+                variation_model_card = ''
 
                 # Extract version
                 if version_selector:
@@ -387,6 +389,27 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                 if not variation_license and license_selectors:
                     logger.info(f"Variation {variation_counter}: Could not find license with any selector")
 
+                # Extract model card (try multiple selectors)
+                model_card_selectors = model_card_selector if isinstance(model_card_selector, list) else [model_card_selector] if model_card_selector else []
+
+                for idx, mc_selector in enumerate(model_card_selectors):
+                    try:
+                        model_card_elem = driver.find_element(By.CSS_SELECTOR, mc_selector)
+                        # Get the text content, preserving some structure
+                        variation_model_card = model_card_elem.text.strip()
+
+                        if variation_model_card:
+                            # Log truncated version (first 100 chars) to avoid log spam
+                            preview = variation_model_card[:100] + '...' if len(variation_model_card) > 100 else variation_model_card
+                            logger.info(f"Variation {variation_counter}: Found model card using selector {idx + 1}/{len(model_card_selectors)} - Preview: {preview}")
+                            break
+                    except Exception as e:
+                        logger.info(f"Variation {variation_counter}: Model card selector {idx + 1}/{len(model_card_selectors)} failed: {e}")
+                        continue
+
+                if not variation_model_card and model_card_selectors:
+                    logger.info(f"Variation {variation_counter}: Could not find model card with any selector")
+
                 # Create variation dictionary
                 variation = {
                     'model_id': model_id,
@@ -395,7 +418,7 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                     'transformers_variation_version': variation_version,
                     'transformers_variation_license': variation_license,
                     'transformers_variation_downloads': variation_downloads,
-                    'transformers_model_card': '',
+                    'transformers_model_card': variation_model_card,
                     'transformers_description': ''
                 }
                 variations.append(variation)

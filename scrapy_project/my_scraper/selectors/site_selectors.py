@@ -161,6 +161,14 @@ class KaggleSelectors:
         'a.sc-bbbBoY.hzCdJV',  # Link format (e.g., "Apache 2.0")
         'p.sc-gGKoUb.bEqAGC',  # Plain text format (e.g., "Gemma")
     ]
+
+    # Model card selector for variation (appears after selecting a variation)
+    # Target: div element containing the full model card with description, training data, etc.
+    TRANSFORMERS_VARIATION_MODEL_CARD_SELECTORS: List[str] = [
+        'div.sc-lkCrJH:nth-child(3)',  # Third sc-lkCrJH div (model card section)
+        'div.sc-lkCrJH.ghmUBs',  # With specific class
+        'div.sc-lkCrJH',  # Fallback - any sc-lkCrJH div
+    ]
     
     # Fallback CSS selector for description (used with Selenium)
     DESCRIPTION_CSS_FALLBACK: str = '.sc-fhfEft > p:nth-child(2)'
@@ -228,6 +236,7 @@ def get_selectors_for_site(site: str) -> Dict:
             'transformers_variation_version': KaggleSelectors.TRANSFORMERS_VARIATION_VERSION,
             'transformers_variation_downloads': KaggleSelectors.TRANSFORMERS_VARIATION_DOWNLOADS,
             'transformers_variation_license': KaggleSelectors.TRANSFORMERS_VARIATION_LICENSE_SELECTORS,
+            'transformers_variation_model_card': KaggleSelectors.TRANSFORMERS_VARIATION_MODEL_CARD_SELECTORS,
             'tags': KaggleSelectors.TAG_SELECTORS,
             'tag_links': KaggleSelectors.TAG_LINK_SELECTOR,
             'tag_more_button_span': KaggleSelectors.TAG_MORE_BUTTON_TEXT_SPAN,
