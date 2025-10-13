@@ -30,19 +30,23 @@ def get_driver_from_response(response) -> Optional[webdriver.Chrome]:
 
 def parse_tree_from_response(response, driver: Optional[webdriver.Chrome] = None) -> lxml_html.HtmlElement:
     """
-    Create lxml tree from response
+    Create lxml tree from response or driver
 
     Args:
         response: Scrapy response object
-        driver: Optional Selenium driver (not used, kept for backwards compatibility)
+        driver: Optional Selenium driver. If provided, will use current page source from driver
+                instead of response.text. This is useful after navigation events.
 
     Returns:
         lxml HtmlElement tree
     """
-    # Always use response.text which contains the page source captured by middleware
-    # at the correct time. DO NOT use driver.page_source as the driver may have
-    # navigated to a different page by the time this method is called.
-    return lxml_html.fromstring(response.text)
+    # If driver is provided, use its current page source (for post-navigation parsing)
+    # Otherwise, use response.text which contains the page source captured by middleware
+    if driver is not None:
+        page_source = driver.page_source
+        return lxml_html.fromstring(page_source)
+    else:
+        return lxml_html.fromstring(response.text)
 
 
 def wait_for_element(driver: webdriver.Chrome, selector: str,
