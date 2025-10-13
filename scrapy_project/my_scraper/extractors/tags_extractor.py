@@ -23,6 +23,28 @@ from .selenium_utils import (
 logger = logging.getLogger(__name__)
 
 
+def clean_tag_text(tag_text: str) -> str:
+    """
+    Clean up tag text by removing accessibility and formatting artifacts
+
+    Args:
+        tag_text: Raw tag text to clean
+
+    Returns:
+        Cleaned tag text
+    """
+    if not tag_text:
+        return ''
+
+    # Remove common accessibility suffixes
+    tag_text = tag_text.replace(' opens in new window', '')
+    tag_text = tag_text.replace(' opens in a new window', '')
+    tag_text = tag_text.replace(', opens in new window', '')
+    tag_text = tag_text.replace(', opens in a new window', '')
+
+    return tag_text.strip()
+
+
 def extract_tags_from_more_buttons(driver: webdriver.Chrome, selectors: Dict) -> Set[str]:
     """
     Extract tags from hidden 'more' buttons that reveal additional tags in popups
@@ -97,14 +119,18 @@ def extract_tags_from_more_buttons(driver: webdriver.Chrome, selectors: Dict) ->
                         # Get the aria-label which contains the tag name
                         tag_name = get_element_attribute(tag_button, 'aria-label')
                         if tag_name:
-                            all_tags.add(tag_name)
+                            tag_name = clean_tag_text(tag_name)
+                            if tag_name:
+                                all_tags.add(tag_name)
                         else:
                             # Fallback: get text from span
                             tag_spans = tag_button.find_elements(By.CSS_SELECTOR, popup_text_span)
                             for span in tag_spans:
                                 tag_text = get_element_text(span)
                                 if tag_text:
-                                    all_tags.add(tag_text)
+                                    tag_text = clean_tag_text(tag_text)
+                                    if tag_text:
+                                        all_tags.add(tag_text)
 
                     logger.debug(f"Extracted {len(tag_buttons)} tags from popup")
 
@@ -170,16 +196,62 @@ def extract_tags(driver: webdriver.Chrome, tree: lxml_html.HtmlElement,
                 tag_links = driver.find_elements(By.CSS_SELECTOR, tag_link_selector)
                 logger.debug(f"Found {len(tag_links)} tag links")
 
+                tags_before = len(tags)
+                skipped_empty = 0
+                skipped_duplicates = 0
+
                 for link in tag_links:
                     try:
+                        # Try to get text from element
                         tag_text = link.text.strip()
-                        if tag_text and tag_text not in tags:
-                            tags.append(tag_text)
-                    except Exception:
+
+                        # If no visible text, try aria-label or title attributes
+                        if not tag_text:
+                            tag_text = link.get_attribute('aria-label')
+                            if tag_text:
+                                tag_text = tag_text.strip()
+
+                        if not tag_text:
+                            tag_text = link.get_attribute('title')
+                            if tag_text:
+                                tag_text = tag_text.strip()
+
+                        # If still no text, try to get from href (last part after /)
+                        if not tag_text:
+                            href = link.get_attribute('href')
+                            if href and '/tag/' in href:
+                                tag_text = href.split('/tag/')[-1].strip('/')
+                                tag_text = tag_text.replace('-', ' ').replace('_', ' ').title()
+
+                        # Clean up accessibility text from tags
+                        tag_text = clean_tag_text(tag_text)
+
+                        if tag_text:
+                            if tag_text not in tags:
+                                tags.append(tag_text)
+                            else:
+                                skipped_duplicates += 1
+                        else:
+                            skipped_empty += 1
+                            logger.debug(f"Tag link has no text, aria-label, title, or href info")
+                    except Exception as e:
+                        logger.debug(f"Error extracting tag from link: {e}")
                         continue
 
-                if tag_links:
-                    logger.info(f"Found {len(tag_links)} additional tags using specific selector")
+                tags_added = len(tags) - tags_before
+                if tags_added > 0:
+                    log_msg = f"Found {tags_added} new tags using specific selector"
+                    if skipped_duplicates > 0:
+                        log_msg += f" ({skipped_duplicates} duplicates skipped"
+                        if skipped_empty > 0:
+                            log_msg += f", {skipped_empty} empty tags skipped)"
+                        else:
+                            log_msg += ")"
+                    elif skipped_empty > 0:
+                        log_msg += f" ({skipped_empty} empty tags skipped)"
+                    logger.info(log_msg)
+                elif skipped_empty > 0 or skipped_duplicates > 0:
+                    logger.debug(f"No new tags added: {skipped_duplicates} duplicates, {skipped_empty} empty")
 
             except Exception as e:
                 logger.debug(f"Specific tag link selector failed: {e}")
@@ -260,7 +332,7 @@ def extract_tags(driver: webdriver.Chrome, tree: lxml_html.HtmlElement,
                 logger.debug(f"Fallback tags search failed: {e}")
 
         if tags:
-            logger.info(f"Successfully extracted {len(tags)} tags for {name}")
+            logger.info(f"Successfully extracted {len(tags)} total unique tags for {name}")
         else:
             logger.warning(f"Could not find any tags for {name}")
 
