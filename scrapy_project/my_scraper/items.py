@@ -32,6 +32,7 @@ class TransformersVariationItem(scrapy.Item):
     """Item for Transformers variation metadata"""
     model_id = scrapy.Field()
     transformers_variation = scrapy.Field()
+    transformers_variation_name = scrapy.Field()
     transformers_variation_version = scrapy.Field()
     transformers_variation_license = scrapy.Field()
     transformers_variation_downloads = scrapy.Field()

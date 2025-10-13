@@ -126,10 +126,38 @@ class KaggleSelectors:
     MODEL_CARD_ACTION_BUTTON: str = '.sc-kHBIib > span:nth-child(2)'
     
     # Transformers variation dropdown action selector (click to open the list)
-    TRANSFORMERS_VARIATION_ACTION: str = '.MuiSelect-iconOutlined'
-    
-    # Transformers variation list item selector (the specific list item text to capture)
-    TRANSFORMERS_VARIATION_ITEM: str = 'li.MuiButtonBase-root:nth-child(1) > div:nth-child(1) > p:nth-child(1)'
+    # Target: The combobox button with aria-label="Select Variation"
+    TRANSFORMERS_VARIATION_ACTION: str = 'div[role="combobox"][aria-label="Select Variation"]'
+
+    # Transformers variation list container (the opened dropdown)
+    # Target: ul element with role="listbox" that contains all variation options
+    TRANSFORMERS_VARIATION_LIST_CONTAINER: str = 'ul[role="listbox"]'
+
+    # Transformers variation list item selector (all list items in the dropdown)
+    # Target: li elements with role="option" within the opened listbox
+    TRANSFORMERS_VARIATION_LIST_ITEMS: str = 'li[role="option"]'
+
+    # Transformers variation name selector (text within each list item in dropdown)
+    # Target: div with class "sc-jaGrhB hYa-DAr" containing the variation name
+    TRANSFORMERS_VARIATION_NAME: str = 'div.sc-jaGrhB.hYa-DAr'
+
+    # Transformers variation details selectors (after clicking a variation)
+    # These appear after selecting a variation from the dropdown
+
+    # Selected variation name (appears in the selected state)
+    TRANSFORMERS_VARIATION_SELECTED_NAME: str = 'div.sc-jaGrhB.hYa-DAr'
+
+    # Version selector (appears after selecting a variation)
+    # Target: a element with class "sc-eVqvcJ iRcjJz" containing version info
+    TRANSFORMERS_VARIATION_VERSION: str = 'a.sc-eVqvcJ.iRcjJz'
+
+    # Downloads selector (appears after selecting a variation)
+    # Target: span element with classes for download count
+    TRANSFORMERS_VARIATION_DOWNLOADS: str = 'span.sc-kCuUfV.sc-hoocXy.iPCsnU.eqfbZr'
+
+    # License selector (appears after selecting a variation)
+    # Target: a element with aria-label containing license info
+    TRANSFORMERS_VARIATION_LICENSE: str = 'a.sc-bbbBoY.hzCdJV'
     
     # Fallback CSS selector for description (used with Selenium)
     DESCRIPTION_CSS_FALLBACK: str = '.sc-fhfEft > p:nth-child(2)'
@@ -190,7 +218,13 @@ def get_selectors_for_site(site: str) -> Dict:
             'model_card_selectors': KaggleSelectors.MODEL_CARD_SELECTORS,
             'model_card_action': KaggleSelectors.MODEL_CARD_ACTION_BUTTON,
             'transformers_variation_action': KaggleSelectors.TRANSFORMERS_VARIATION_ACTION,
-            'transformers_variation_item': KaggleSelectors.TRANSFORMERS_VARIATION_ITEM,
+            'transformers_variation_list_container': KaggleSelectors.TRANSFORMERS_VARIATION_LIST_CONTAINER,
+            'transformers_variation_list_items': KaggleSelectors.TRANSFORMERS_VARIATION_LIST_ITEMS,
+            'transformers_variation_name': KaggleSelectors.TRANSFORMERS_VARIATION_NAME,
+            'transformers_variation_selected_name': KaggleSelectors.TRANSFORMERS_VARIATION_SELECTED_NAME,
+            'transformers_variation_version': KaggleSelectors.TRANSFORMERS_VARIATION_VERSION,
+            'transformers_variation_downloads': KaggleSelectors.TRANSFORMERS_VARIATION_DOWNLOADS,
+            'transformers_variation_license': KaggleSelectors.TRANSFORMERS_VARIATION_LICENSE,
             'tags': KaggleSelectors.TAG_SELECTORS,
             'tag_links': KaggleSelectors.TAG_LINK_SELECTOR,
             'tag_more_button_span': KaggleSelectors.TAG_MORE_BUTTON_TEXT_SPAN,

@@ -25,6 +25,7 @@ from my_scraper.extractors.tags_extractor import extract_tags
 from my_scraper.extractors.collaborators_extractor import extract_collaborators
 from my_scraper.extractors.authors_extractor import extract_authors
 from my_scraper.extractors.provenance_extractor import extract_provenance
+from my_scraper.extractors.variations_extractor import extract_variations
 
 
 class KaggleMetadataSpider(scrapy.Spider):
@@ -173,7 +174,7 @@ class KaggleMetadataSpider(scrapy.Spider):
             item['usability'] = extract_usability(temp_driver, tree, self.selectors, model_name)
             item['tags'] = extract_tags(temp_driver, tree, self.selectors, model_name)
             item['model_card'] = self.extract_model_card(temp_driver, tree, self.selectors, model_name)
-            item['transformers_variations'] = self.extract_transformers_variations(
+            item['transformers_variations'] = extract_variations(
                 temp_driver, self.selectors, model_name, model_id
             )
 
@@ -280,65 +281,5 @@ class KaggleMetadataSpider(scrapy.Spider):
         model_card_text = result['text']
         if result['links']:
             model_card_text += '\n\nLinks:\n' + '\n'.join([f"- {l}" for l in result['links']])
-        
+
         return model_card_text
-    
-    def extract_transformers_variations(self, driver, selectors: Dict, name: str, 
-                                       model_id: int) -> List[Dict]:
-        """
-        Extract transformers variation entries
-        
-        Args:
-            driver: Selenium driver instance
-            selectors: Selectors configuration dictionary
-            name: Model name for logging
-            model_id: Model ID
-            
-        Returns:
-            List of variation dictionaries
-        """
-        variations = []
-        
-        action_selector = selectors.get('transformers_variation_action')
-        
-        # Try to click the action that reveals the list
-        if action_selector:
-            try:
-                if click_element(driver, action_selector):
-                    time.sleep(0.5)
-            except Exception:
-                pass
-        
-        # Find list items
-        elems = []
-        try:
-            elems = driver.find_elements(By.CSS_SELECTOR, 'li.MuiButtonBase-root')
-        except Exception:
-            pass
-        
-        for el in elems:
-            try:
-                text = el.text.strip()
-                if not text:
-                    # Try inner p element
-                    try:
-                        p = el.find_element(By.CSS_SELECTOR, 'p')
-                        text = p.text.strip()
-                    except Exception:
-                        text = ''
-                
-                if text:
-                    variation = {
-                        'model_id': model_id,
-                        'transformers_variation': text,
-                        'transformers_variation_version': '',
-                        'transformers_variation_license': '',
-                        'transformers_variation_downloads': '',
-                        'transformers_model_card': '',
-                        'transformers_description': ''
-                    }
-                    variations.append(variation)
-            except Exception:
-                continue
-        
-        return variations
