@@ -153,7 +153,10 @@ class KaggleSelectors:
 
     # Downloads selector (appears after selecting a variation)
     # Target: span element with classes for download count
-    TRANSFORMERS_VARIATION_DOWNLOADS: str = 'span.sc-kCuUfV.sc-hoocXy.iPCsnU.eqfbZr'
+    # IMPORTANT: This must be the variation-specific downloads, NOT the main model downloads
+    # The correct element is: <span class="sc-kCuUfV sc-hoocXy iPCsnU eqfbZr">398</span>
+    # within the variation details section only
+    TRANSFORMERS_VARIATION_DOWNLOADS: str = '.sc-sphZQ > div:nth-child(2) > p:nth-child(2) > div:nth-child(1) > span:nth-child(1)'
 
     # License selectors (appears after selecting a variation)
     # License can appear in different formats (link or plain text)
