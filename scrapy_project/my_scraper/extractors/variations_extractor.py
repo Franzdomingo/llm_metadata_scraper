@@ -177,8 +177,22 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
         model_card_selector = selectors.get('variation_model_card')
         is_finetunable_selector = selectors.get('is_finetunable')
         example_usage_selector = selectors.get('example_usage')
+        tab_selected_selector = selectors.get('variation_tab_selected')
 
         logger.info(f"Using selectors - action: {action_selector}, list_items: {list_items_selector}")
+
+        # Extract the selected tab text to use as variation prefix
+        variation_prefix = ''
+        if tab_selected_selector:
+            try:
+                tab_elem = driver.find_element(By.CSS_SELECTOR, tab_selected_selector)
+                variation_prefix = tab_elem.text.strip()
+                logger.info(f"Found selected tab with text: '{variation_prefix}'")
+            except Exception as e:
+                logger.info(f"Could not extract tab text (will use default format): {e}")
+
+        if not variation_prefix:
+            logger.info("No tab prefix found, using default 'variation' format")
 
         # Step 1: Click the dropdown button to open the variation list
         if not action_selector:
@@ -528,9 +542,15 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                 if not variation_example_usage and example_usage_selectors:
                     logger.info(f"Variation {variation_counter}: Could not find example usage with any selector")
 
-                # Create variation dictionary
+                # Create variation dictionary with prefix
+                # Format: "Transformers/variation_01" if prefix exists, else "variation_01"
+                if variation_prefix:
+                    variation_id = f'{variation_prefix}/variation_{variation_counter:02d}'
+                else:
+                    variation_id = f'variation_{variation_counter:02d}'
+
                 variation = {
-                    'variation': f'variation_{variation_counter:02d}',
+                    'variation': variation_id,
                     'variation_name': variation_name,
                     'variation_version': variation_version,
                     'variation_license': variation_license,
@@ -540,7 +560,7 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                     'example_usage': variation_example_usage
                 }
                 variations.append(variation)
-                logger.info(f"Extracted variation_{variation_counter:02d}: {variation_name} (Version: {variation_version}, Downloads: {variation_downloads}, License: {variation_license})")
+                logger.info(f"Extracted {variation_id}: {variation_name} (Version: {variation_version}, Downloads: {variation_downloads}, License: {variation_license})")
                 variation_counter += 1
 
             except Exception as e:
