@@ -168,15 +168,15 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
         logger.info(f"Starting variations extraction for {name}")
 
         # Get selectors from configuration
-        action_selector = selectors.get('transformers_variation_action')
-        list_items_selector = selectors.get('transformers_variation_list_items')
-        name_selector = selectors.get('transformers_variation_name')
-        version_selector = selectors.get('transformers_variation_version')
-        downloads_selector = selectors.get('transformers_variation_downloads')
-        license_selector = selectors.get('transformers_variation_license')
-        model_card_selector = selectors.get('transformers_variation_model_card')
-        is_finetunable_selector = selectors.get('transformers_is_finetunable')
-        example_usage_selector = selectors.get('transformers_example_usage')
+        action_selector = selectors.get('variation_action')
+        list_items_selector = selectors.get('variation_list_items')
+        name_selector = selectors.get('variation_name')
+        version_selector = selectors.get('variation_version')
+        downloads_selector = selectors.get('variation_downloads')
+        license_selector = selectors.get('variation_license')
+        model_card_selector = selectors.get('variation_model_card')
+        is_finetunable_selector = selectors.get('is_finetunable')
+        example_usage_selector = selectors.get('example_usage')
 
         logger.info(f"Using selectors - action: {action_selector}, list_items: {list_items_selector}")
 
@@ -215,7 +215,7 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
 
         try:
             # Wait for the list container to appear first
-            list_container_selector = selectors.get('transformers_variation_list_container', 'ul[role="listbox"]')
+            list_container_selector = selectors.get('variation_list_container', 'ul[role="listbox"]')
 
             logger.info(f"Waiting for list container with selector '{list_container_selector}'")
 
@@ -320,7 +320,7 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                 # Re-find the list items (they may be stale after re-opening dropdown)
                 try:
                     # Wait for list container to appear again
-                    list_container_selector = selectors.get('transformers_variation_list_container', 'ul[role="listbox"]')
+                    list_container_selector = selectors.get('variation_list_container', 'ul[role="listbox"]')
                     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, list_container_selector)))
                     time.sleep(0.3)  # Small delay for items to render
 
@@ -530,14 +530,14 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
 
                 # Create variation dictionary
                 variation = {
-                    'transformers_variation': f'variation_{variation_counter:02d}',
-                    'transformers_variation_name': variation_name,
-                    'transformers_variation_version': variation_version,
-                    'transformers_variation_license': variation_license,
-                    'transformers_variation_downloads': variation_downloads,
-                    'transformers_model_card': variation_model_card,
-                    'transformers_is_finetunable': variation_is_finetunable,
-                    'transformers_example_usage': variation_example_usage
+                    'variation': f'variation_{variation_counter:02d}',
+                    'variation_name': variation_name,
+                    'variation_version': variation_version,
+                    'variation_license': variation_license,
+                    'variation_downloads': variation_downloads,
+                    'model_card': variation_model_card,
+                    'is_finetunable': variation_is_finetunable,
+                    'example_usage': variation_example_usage
                 }
                 variations.append(variation)
                 logger.info(f"Extracted variation_{variation_counter:02d}: {variation_name} (Version: {variation_version}, Downloads: {variation_downloads}, License: {variation_license})")

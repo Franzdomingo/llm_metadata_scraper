@@ -32,14 +32,13 @@ CREATE TABLE
     provenance TEXT       -- provenance info
 );
 
--- Table for transformer-specific info (optional, for models that are transformers)
-CREATE TABLE transformers_variation__info (
+CREATE TABLE variation_info (
     model_id INT REFERENCES kaggle_models(id) ON DELETE CASCADE PRIMARY KEY,
-    transformers_variation TEXT,
-    transformers_variation_version TEXT,
-    transformers_variation_license TEXT,
-    transformers_variation_downloads INT,
-    transformers_model_card TEXT, -- store README or markdown content
-    transformers_is_finetunable BOOLEAN,
-    transformers_example_usage TEXT -- store example usage code snippets
+    variation TEXT,
+    variation_version TEXT,
+    variation_license TEXT,
+    variation_downloads INT,
+    model_card TEXT, -- store README or markdown content
+    is_finetunable BOOLEAN,
+    example_usage TEXT -- store example usage code snippets
 );
