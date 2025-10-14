@@ -1,2 +1,7 @@
 name,kaggle_url
 Qwen3 Next 80B,https://www.kaggle.com/models/qwen-lm/qwen3-next-80b
+Gemma-SEA-LION-v4-27B,https://www.kaggle.com/models/ai-singapore/gemma-sea-lion-v4-27b
+Gemma-SEA-LION-v4-27B-IT-GGUF,https://www.kaggle.com/models/ai-singapore/gemma-sea-lion-v4-27b-it-gguf
+Gemma-SEA-LION-v4-27B-IT-FP8-Dynamic,https://www.kaggle.com/models/ai-singapore/gemma-sea-lion-v4-27b-it-fp8-dynamic
+Gemma-SEA-LION-v4-27B-IT-NVFP4,https://www.kaggle.com/models/ai-singapore/gemma-sea-lion-v4-27b-it-nvfp4
+PARSeq,https://www.kaggle.com/models/keras/parseq

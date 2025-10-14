@@ -45,8 +45,8 @@ class KaggleMetadataSpider(scrapy.Spider):
     allowed_domains = ['kaggle.com']
 
     custom_settings = {
-        'CONCURRENT_REQUESTS': 1,  # Process one at a time to avoid rate limiting
-        'DOWNLOAD_DELAY': 1.5,
+        'CONCURRENT_REQUESTS': 8,  # Process multiple requests in parallel
+        'DOWNLOAD_DELAY': 0.5,  # Reduced delay for faster processing
     }
 
     def __init__(self, input_file=None, *args, **kwargs):
@@ -189,23 +189,15 @@ class KaggleMetadataSpider(scrapy.Spider):
 
         self.logger.info(f'Processing {model_id}: {model_name}')
 
-        # Create a temporary driver and navigate to the actual URL
-        # This ensures extraction methods have access to fully-rendered dynamic content
-        chrome_options = Options()
-        chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
+        # Use the driver from the middleware (already loaded with the page)
+        driver = response.meta.get('driver')
 
-        temp_driver = webdriver.Chrome(options=chrome_options)
+        if not driver:
+            self.logger.error(f'No driver available for {model_name}')
+            return
 
         try:
-            # Navigate to the actual URL to get full dynamic content
-            temp_driver.get(response.url)
-
-            # Wait for page to load
-            time.sleep(2)
-
-            # Parse tree from the temp driver's page source
+            # Parse tree from the response
             tree = parse_tree_from_response(response)
 
             # Create item
@@ -217,20 +209,20 @@ class KaggleMetadataSpider(scrapy.Spider):
             # Add timestamp when data is scraped
             item['scraped_on'] = datetime.now().isoformat()
 
-            # Extract using temp_driver which has the correct HTML loaded
-            item['short_description'] = extract_description(temp_driver, tree, self.selectors, model_name)
-            item['downloads'] = extract_downloads(temp_driver, tree, self.selectors, model_name)
-            item['usability'] = extract_usability(temp_driver, tree, self.selectors, model_name)
-            item['model_card'] = self.extract_model_card(temp_driver, tree, self.selectors, model_name)
-            item['tags'] = extract_tags(temp_driver, tree, self.selectors, model_name)
+            # Extract using driver from middleware pool
+            item['short_description'] = extract_description(driver, tree, self.selectors, model_name)
+            item['downloads'] = extract_downloads(driver, tree, self.selectors, model_name)
+            item['usability'] = extract_usability(driver, tree, self.selectors, model_name)
+            item['model_card'] = self.extract_model_card(driver, tree, self.selectors, model_name)
+            item['tags'] = extract_tags(driver, tree, self.selectors, model_name)
             item['variations'] = extract_variations(
-                temp_driver, self.selectors, model_name, model_id
+                driver, self.selectors, model_name, model_id
             )
 
             # Extract collaborators, authors, and provenance, then build model_metadata
-            collaborators = extract_collaborators(temp_driver, tree, self.selectors, model_name)
-            authors = extract_authors(temp_driver, tree, self.selectors, model_name)
-            provenance = extract_provenance(temp_driver, tree, self.selectors, model_name)
+            collaborators = extract_collaborators(driver, tree, self.selectors, model_name)
+            authors = extract_authors(driver, tree, self.selectors, model_name)
+            provenance = extract_provenance(driver, tree, self.selectors, model_name)
             item['model_metadata'] = {
                 'collaborators': collaborators,
                 'authors': authors,
@@ -242,9 +234,10 @@ class KaggleMetadataSpider(scrapy.Spider):
 
             yield item
 
-        finally:
-            # Always close the temporary driver
-            temp_driver.quit()
+        except Exception as e:
+            self.logger.error(f'Error processing {model_name}: {e}')
+            import traceback
+            traceback.print_exc()
     
     def extract_model_card(self, driver, tree, selectors: Dict, name: str) -> str:
         """
