@@ -81,14 +81,6 @@ class KaggleLinksSpider(scrapy.Spider):
         else:
             # After navigation, parse from driver's current page source
             tree = parse_tree_from_response(response, driver=driver)
-            self.logger.info(f'Page {page_num}: Parsing from driver page source (post-navigation)')
-            
-            # Debug: Check what the driver actually sees right now
-            current_url_from_driver = driver.current_url
-            first_link_from_driver = driver.find_elements(By.XPATH, '//ul/li/div/a[contains(@href, "/models/")]')
-            if first_link_from_driver:
-                self.logger.info(f'Page {page_num}: Driver current URL: {current_url_from_driver}')
-                self.logger.info(f'Page {page_num}: Driver sees first link: {first_link_from_driver[0].get_attribute("href")}')
         
         # Extract model links using configured selector
         model_links_xpath = self.selectors.get('model_links_xpath')
@@ -118,7 +110,7 @@ class KaggleLinksSpider(scrapy.Spider):
             # Skip if already seen
             if full_url in self.seen_urls:
                 duplicate_count += 1
-                self.logger.info(f'Page {page_num}: Duplicate URL #{duplicate_count}: {full_url}')
+                self.logger.debug(f'Page {page_num}: Duplicate URL: {full_url}')
                 continue
             
             self.seen_urls.add(full_url)
@@ -145,11 +137,7 @@ class KaggleLinksSpider(scrapy.Spider):
                 yield item
         
         # Log results
-        self.logger.info(f'Page {page_num}: Scraped {new_models_count} new models, skipped {duplicate_count} duplicates (total seen: {len(self.seen_urls)})')
-        
-        # Log first and last URLs for debugging
-        if first_model_url:
-            self.logger.info(f'Page {page_num}: First URL on page: {first_model_url}')
+        self.logger.info(f'Page {page_num}: Scraped {new_models_count} new models (total seen: {len(self.seen_urls)})')
         
         # Set the first model for page 1 (for comparison after clicking next)
         if page_num == 1 and first_model_url:
