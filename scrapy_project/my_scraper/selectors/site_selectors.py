@@ -125,10 +125,14 @@ class KaggleSelectors:
     # Optional action button to reveal model card (click before scraping)
     MODEL_CARD_ACTION_BUTTON: str = '.sc-kHBIib > span:nth-child(2)'
     
-    # Selected tab button (to extract the tab text for variation prefix)
-    # Target: The selected tab button with aria-selected="true" containing the tab name
+    # All tab buttons (to extract all tabs for processing)
+    # Target: All tab buttons with role="tab" containing tab names
     # The text is within: <div class="sc-biDvOf cFgyMf">Transformers</div>
-    VARIATION_TAB_SELECTED: str = 'button[role="tab"][aria-selected="true"] div.sc-biDvOf'
+    VARIATION_TABS_ALL: str = 'button[role="tab"]'
+
+    # Tab text selector (within each tab button)
+    # Target: The div containing the tab name text
+    VARIATION_TAB_TEXT: str = 'div.sc-biDvOf'
 
     # Transformers variation dropdown action selector (click to open the list)
     # Target: The combobox button with aria-label="Select Variation"
@@ -254,7 +258,8 @@ def get_selectors_for_site(site: str) -> Dict:
             'description_css_fallback': KaggleSelectors.DESCRIPTION_CSS_FALLBACK,
             'model_card_selectors': KaggleSelectors.MODEL_CARD_SELECTORS,
             'model_card_action': KaggleSelectors.MODEL_CARD_ACTION_BUTTON,
-            'variation_tab_selected': KaggleSelectors.VARIATION_TAB_SELECTED,
+            'variation_tabs_all': KaggleSelectors.VARIATION_TABS_ALL,
+            'variation_tab_text': KaggleSelectors.VARIATION_TAB_TEXT,
             'variation_action': KaggleSelectors.TRANSFORMERS_VARIATION_ACTION,
             'variation_list_container': KaggleSelectors.TRANSFORMERS_VARIATION_LIST_CONTAINER,
             'variation_list_items': KaggleSelectors.TRANSFORMERS_VARIATION_LIST_ITEMS,

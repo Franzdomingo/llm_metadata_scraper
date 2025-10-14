@@ -145,27 +145,30 @@ def click_dropdown_to_open(driver: webdriver.Chrome, selector: str, timeout: int
         return False
 
 
-def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, model_id: int) -> List[Dict]:
+def extract_variations_for_tab(
+    driver: webdriver.Chrome,
+    selectors: Dict,
+    name: str,
+    tab_prefix: str,
+    variation_counter_start: int = 1
+) -> List[Dict]:
     """
-    Extract transformers variation entries by clicking each variation and extracting details
+    Extract variations for a single tab
 
     Args:
         driver: Selenium driver instance
         selectors: Selectors configuration dictionary
         name: Model name for logging
-        model_id: Model ID
+        tab_prefix: Tab name to use as prefix (e.g., "Transformers", "GGUF")
+        variation_counter_start: Starting number for variation counter
 
     Returns:
         List of variation dictionaries with detailed information
     """
     variations = []
 
-    if not driver:
-        logger.info(f"No driver provided, skipping variations extraction for {name}")
-        return variations
-
     try:
-        logger.info(f"Starting variations extraction for {name}")
+        logger.info(f"Extracting variations for tab '{tab_prefix}' - {name}")
 
         # Get selectors from configuration
         action_selector = selectors.get('variation_action')
@@ -177,22 +180,6 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
         model_card_selector = selectors.get('variation_model_card')
         is_finetunable_selector = selectors.get('is_finetunable')
         example_usage_selector = selectors.get('example_usage')
-        tab_selected_selector = selectors.get('variation_tab_selected')
-
-        logger.info(f"Using selectors - action: {action_selector}, list_items: {list_items_selector}")
-
-        # Extract the selected tab text to use as variation prefix
-        variation_prefix = ''
-        if tab_selected_selector:
-            try:
-                tab_elem = driver.find_element(By.CSS_SELECTOR, tab_selected_selector)
-                variation_prefix = tab_elem.text.strip()
-                logger.info(f"Found selected tab with text: '{variation_prefix}'")
-            except Exception as e:
-                logger.info(f"Could not extract tab text (will use default format): {e}")
-
-        if not variation_prefix:
-            logger.info("No tab prefix found, using default 'variation' format")
 
         # Step 1: Click the dropdown button to open the variation list
         if not action_selector:
@@ -310,7 +297,7 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
             return variations
 
         # Step 3: Process each variation in the queue
-        variation_counter = 1
+        variation_counter = variation_counter_start
 
         for queue_item in variation_queue:
             idx = queue_item['index']
@@ -543,11 +530,8 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                     logger.info(f"Variation {variation_counter}: Could not find example usage with any selector")
 
                 # Create variation dictionary with prefix
-                # Format: "Transformers/variation_01" if prefix exists, else "variation_01"
-                if variation_prefix:
-                    variation_id = f'{variation_prefix}/variation_{variation_counter:02d}'
-                else:
-                    variation_id = f'variation_{variation_counter:02d}'
+                # Format: "Transformers/variation_01" using tab_prefix
+                variation_id = f'{tab_prefix}/variation_{variation_counter:02d}'
 
                 variation = {
                     'variation': variation_id,
@@ -568,11 +552,132 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                 continue
 
         if variations:
-            logger.info(f"Successfully extracted {len(variations)} variations with details for {name}")
+            logger.info(f"Successfully extracted {len(variations)} variations for tab '{tab_prefix}' - {name}")
         else:
-            logger.warning(f"No variations extracted for {name} despite finding {len(variation_queue)} items in queue")
+            logger.warning(f"No variations extracted for tab '{tab_prefix}' - {name}")
 
     except Exception as e:
-        logger.error(f"Error in extract_variations for {name}: {e}")
+        logger.error(f"Error extracting variations for tab '{tab_prefix}' - {name}: {e}")
 
     return variations
+
+
+def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, model_id: int) -> List[Dict]:
+    """
+    Extract ALL variations across ALL tabs by detecting and clicking each tab
+
+    Args:
+        driver: Selenium driver instance
+        selectors: Selectors configuration dictionary
+        name: Model name for logging
+        model_id: Model ID
+
+    Returns:
+        List of variation dictionaries with detailed information from all tabs
+    """
+    all_variations = []
+
+    if not driver:
+        logger.info(f"No driver provided, skipping variations extraction for {name}")
+        return all_variations
+
+    try:
+        logger.info(f"Starting multi-tab variations extraction for {name}")
+
+        # Get tab selectors from configuration
+        tabs_all_selector = selectors.get('variation_tabs_all')
+        tab_text_selector = selectors.get('variation_tab_text')
+
+        if not tabs_all_selector or not tab_text_selector:
+            logger.warning(f"Tab selectors not configured, falling back to single-tab extraction")
+            # Fallback: extract without tab information
+            return extract_variations_for_tab(driver, selectors, name, "variation", 1)
+
+        # Step 1: Find all tab buttons and build a tab queue
+        tab_queue = []
+
+        try:
+            tab_buttons = driver.find_elements(By.CSS_SELECTOR, tabs_all_selector)
+            logger.info(f"Found {len(tab_buttons)} tab buttons with selector '{tabs_all_selector}'")
+
+            if len(tab_buttons) == 0:
+                logger.warning(f"No tabs found for {name}, skipping variations")
+                return all_variations
+
+            # Build queue: store tab text and indices
+            for idx, tab_button in enumerate(tab_buttons):
+                try:
+                    # Extract tab text
+                    tab_text_elem = tab_button.find_element(By.CSS_SELECTOR, tab_text_selector)
+                    tab_text = tab_text_elem.text.strip()
+
+                    if tab_text:
+                        tab_queue.append({
+                            'index': idx,
+                            'text': tab_text,
+                            'button': tab_button
+                        })
+                        logger.info(f"Added tab to queue - Index {idx}: {tab_text}")
+
+                except Exception as e:
+                    logger.warning(f"Error extracting text from tab button {idx}: {e}")
+                    continue
+
+            logger.info(f"Built tab queue with {len(tab_queue)} tabs for {name}")
+
+        except Exception as e:
+            logger.error(f"Error building tab queue for {name}: {e}")
+            return all_variations
+
+        # Step 2: Process each tab
+        variation_counter = 1  # Global counter across all tabs
+
+        for tab_item in tab_queue:
+            tab_idx = tab_item['index']
+            tab_text = tab_item['text']
+
+            try:
+                logger.info(f"Processing tab {tab_idx + 1}/{len(tab_queue)}: {tab_text}")
+
+                # Click the tab button
+                try:
+                    # Re-find the tab button (it may be stale)
+                    tab_buttons = driver.find_elements(By.CSS_SELECTOR, tabs_all_selector)
+                    if tab_idx < len(tab_buttons):
+                        tab_button = tab_buttons[tab_idx]
+
+                        # Scroll into view and click
+                        driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", tab_button)
+                        time.sleep(0.3)
+                        tab_button.click()
+                        logger.info(f"Clicked tab: {tab_text}")
+                        time.sleep(1)  # Wait for tab content to load
+                    else:
+                        logger.warning(f"Tab index {tab_idx} out of range")
+                        continue
+
+                except Exception as e:
+                    logger.error(f"Error clicking tab '{tab_text}': {e}")
+                    continue
+
+                # Extract variations for this tab
+                tab_variations = extract_variations_for_tab(
+                    driver, selectors, name, tab_text, variation_counter
+                )
+
+                # Add to all_variations and update counter
+                all_variations.extend(tab_variations)
+                variation_counter += len(tab_variations)
+
+                logger.info(f"Extracted {len(tab_variations)} variations from tab '{tab_text}'")
+
+            except Exception as e:
+                logger.warning(f"Error processing tab '{tab_text}': {e}")
+                continue
+
+        logger.info(f"Completed multi-tab extraction: {len(all_variations)} total variations from {len(tab_queue)} tabs for {name}")
+
+    except Exception as e:
+        logger.error(f"Error in multi-tab extract_variations for {name}: {e}")
+
+    return all_variations

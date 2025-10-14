@@ -221,8 +221,8 @@ class KaggleMetadataSpider(scrapy.Spider):
             item['short_description'] = extract_description(temp_driver, tree, self.selectors, model_name)
             item['downloads'] = extract_downloads(temp_driver, tree, self.selectors, model_name)
             item['usability'] = extract_usability(temp_driver, tree, self.selectors, model_name)
-            item['tags'] = extract_tags(temp_driver, tree, self.selectors, model_name)
             item['model_card'] = self.extract_model_card(temp_driver, tree, self.selectors, model_name)
+            item['tags'] = extract_tags(temp_driver, tree, self.selectors, model_name)
             item['variations'] = extract_variations(
                 temp_driver, self.selectors, model_name, model_id
             )
