@@ -173,32 +173,78 @@ class SpiderManager:
             return False
     
     def run_all_spiders(self):
-        """Run all spiders in sequence"""
+        """Run all spiders in sequence, with smart chaining for kaggle spiders"""
         if not self.detected_spiders:
             print("[!] No spiders detected!")
             return
-        
-        print(f"\nRunning all {len(self.detected_spiders)} spiders in sequence...\n")
-        
+
+        print(f"\nRunning all spiders with intelligent chaining...\n")
+
         results = []
+        kaggle_links_output = None
+
         for spider in self.detected_spiders:
             print(f"\n{'=' * 80}")
             print(f"Starting: {spider['name']}".center(80))
             print(f"{'=' * 80}\n")
-            
-            # Run each spider in a subprocess to avoid Twisted reactor issues
-            success = self._run_spider_subprocess(spider['name'])
+
+            # Special handling for kaggle_metadata spider
+            if spider['name'] == 'kaggle_metadata':
+                # Check if we just ran kaggle_links spider
+                if kaggle_links_output:
+                    print(f"[+] Using output from kaggle_links spider: {kaggle_links_output}")
+                    # Run with the specific input file
+                    success = self._run_spider_subprocess(
+                        spider['name'],
+                        {'input_file': kaggle_links_output}
+                    )
+                else:
+                    # Look for most recent kaggle_links output
+                    import glob
+                    output_dir = self.project_dir / 'output'
+                    json_pattern = str(output_dir / 'kaggle_links_*.json')
+                    matching_files = glob.glob(json_pattern)
+
+                    if matching_files:
+                        most_recent = max(matching_files, key=os.path.getctime)
+                        print(f"[+] Found recent kaggle_links output: {most_recent}")
+                        success = self._run_spider_subprocess(
+                            spider['name'],
+                            {'input_file': most_recent}
+                        )
+                    else:
+                        print("[!] Warning: No kaggle_links output found. Running without input file...")
+                        success = self._run_spider_subprocess(spider['name'])
+            else:
+                # Run normally
+                success = self._run_spider_subprocess(spider['name'])
+
+                # If this was kaggle_links spider, find its output file
+                if spider['name'] == 'kaggle_links' and success:
+                    import glob
+                    import time
+                    # Wait a moment for file to be written
+                    time.sleep(1)
+                    output_dir = self.project_dir / 'output'
+                    json_pattern = str(output_dir / 'kaggle_links_*.json')
+                    matching_files = glob.glob(json_pattern)
+
+                    if matching_files:
+                        # Get the most recent file (should be the one we just created)
+                        kaggle_links_output = max(matching_files, key=os.path.getctime)
+                        print(f"[+] Kaggle links output saved to: {kaggle_links_output}")
+
             results.append((spider['name'], success))
-        
+
         # Summary
         print(f"\n{'=' * 80}")
         print("Summary".center(80))
         print(f"{'=' * 80}\n")
-        
+
         for spider_name, success in results:
             status = "[+] Success" if success else "[!] Failed"
             print(f"  {spider_name}: {status}")
-        
+
         print(f"\n{'=' * 80}\n")
     
     def _run_spider_subprocess(self, spider_name: str, spider_args: Dict = None):

@@ -54,80 +54,125 @@ class KaggleMetadataSpider(scrapy.Spider):
         Initialize spider
 
         Args:
-            input_file: Path to CSV file with model URLs (default: output/kaggle_output.csv)
+            input_file: Path to JSON or CSV file with model URLs (default: looks for recent kaggle_links output)
         """
         super().__init__(*args, **kwargs)
         self.selectors = get_selectors_for_site('kaggle')
-        
+
         # Determine input file path
         if input_file:
             self.input_file = input_file
         else:
             # Look for input file in common locations
-            possible_paths = [
-                'output/kaggle_output.csv',
-                '../output/kaggle_output.csv',
-                '../../output/kaggle_output.csv',
-                # Also look for recent kaggle_links output files
-                'output/kaggle_links_*.csv',
-            ]
-            
+            # Prioritize JSON files from kaggle_links spider
+            import glob
+
             self.input_file = None
-            
-            # First try exact paths
-            for path in possible_paths[:3]:
-                if os.path.exists(path):
-                    self.input_file = path
-                    break
-            
-            # If not found, look for most recent kaggle_links output
-            if not self.input_file:
-                import glob
-                pattern = 'output/kaggle_links_*.csv'
+
+            # First look for recent JSON files from kaggle_links
+            json_patterns = [
+                'output/kaggle_links_*.json',
+                '../output/kaggle_links_*.json',
+            ]
+
+            for pattern in json_patterns:
                 matching_files = glob.glob(pattern)
                 if matching_files:
                     # Get the most recent file
                     self.input_file = max(matching_files, key=os.path.getctime)
-                    self.logger.info(f'Found recent kaggle_links output: {self.input_file}')
-        
+                    self.logger.info(f'Found recent kaggle_links JSON output: {self.input_file}')
+                    break
+
+            # Fallback to CSV files if no JSON found
+            if not self.input_file:
+                csv_paths = [
+                    'output/kaggle_output.csv',
+                    '../output/kaggle_output.csv',
+                    '../../output/kaggle_output.csv',
+                ]
+
+                for path in csv_paths:
+                    if os.path.exists(path):
+                        self.input_file = path
+                        self.logger.info(f'Found CSV file: {self.input_file}')
+                        break
+
         if not self.input_file:
             raise ValueError(
                 'Input file not found. Please:\n'
                 '1. First run: python run.py kaggle_links -a max_pages=10\n'
                 '2. Then run: python run.py kaggle_metadata\n'
-                'Or provide input_file parameter: -a input_file=path/to/file.csv'
+                'Or provide input_file parameter: -a input_file=path/to/file.json'
             )
-        
+
         self.logger.info(f'Using input file: {self.input_file}')
         self.model_counter = 0
     
     def start_requests(self):
-        """Generate requests from input CSV file"""
-        # Read CSV file
-        with open(self.input_file, 'r', encoding='utf-8') as csvfile:
-            reader = csv.DictReader(csvfile)
-            
-            for row in reader:
-                self.model_counter += 1
-                
-                name = row.get('name', '')
-                url = row.get('kaggle_url', '')
-                
-                if not url:
-                    self.logger.warning(f'No URL for model: {name}')
-                    continue
-                
-                yield scrapy.Request(
-                    url=url,
-                    callback=self.parse,
-                    meta={
-                        'selenium': True,
-                        'selenium_wait': 3,
-                        'selenium_wait_selector': 'h2',
-                        'model_name': name,
-                        'model_id': self.model_counter
-                    }
-                )
+        """Generate requests from input JSON or CSV file"""
+        import json
+
+        # Determine file type by extension
+        is_json = self.input_file.endswith('.json')
+
+        if is_json:
+            # Read JSON file
+            with open(self.input_file, 'r', encoding='utf-8') as jsonfile:
+                data = json.load(jsonfile)
+
+                # Handle both list and dict formats
+                if isinstance(data, list):
+                    items = data
+                else:
+                    items = [data]
+
+                for item in items:
+                    self.model_counter += 1
+
+                    name = item.get('name', '')
+                    url = item.get('kaggle_url', '')
+
+                    if not url:
+                        self.logger.warning(f'No URL for model: {name}')
+                        continue
+
+                    yield scrapy.Request(
+                        url=url,
+                        callback=self.parse,
+                        meta={
+                            'selenium': True,
+                            'selenium_wait': 3,
+                            'selenium_wait_selector': 'h2',
+                            'model_name': name,
+                            'model_id': self.model_counter
+                        }
+                    )
+        else:
+            # Read CSV file
+            with open(self.input_file, 'r', encoding='utf-8') as csvfile:
+                reader = csv.DictReader(csvfile)
+
+                for row in reader:
+                    self.model_counter += 1
+
+                    name = row.get('name', '')
+                    url = row.get('kaggle_url', '')
+
+                    if not url:
+                        self.logger.warning(f'No URL for model: {name}')
+                        continue
+
+                    yield scrapy.Request(
+                        url=url,
+                        callback=self.parse,
+                        meta={
+                            'selenium': True,
+                            'selenium_wait': 3,
+                            'selenium_wait_selector': 'h2',
+                            'model_name': name,
+                            'model_id': self.model_counter
+                        }
+                    )
     
     def parse(self, response):
         """
