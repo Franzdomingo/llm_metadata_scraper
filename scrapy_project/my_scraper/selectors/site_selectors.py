@@ -163,11 +163,10 @@ class KaggleSelectors:
     ]
 
     # Model card selector for variation (appears after selecting a variation)
-    # Target: div element containing the full model card with description, training data, etc.
+    # Target: div.sc-lkCrJH element containing the model card (Model Overview section)
+    # This is the third child div within the variation container
     TRANSFORMERS_VARIATION_MODEL_CARD_SELECTORS: List[str] = [
-        'div.sc-lkCrJH:nth-child(3)',  # Third sc-lkCrJH div (model card section)
-        'div.sc-lkCrJH.ghmUBs',  # With specific class
-        'div.sc-lkCrJH',  # Fallback - any sc-lkCrJH div
+        'div.sc-lkCrJH:nth-child(3)',  # Third child div containing model card content
     ]
 
     # Is Finetunable selector for variation (appears after selecting a variation)
@@ -176,6 +175,17 @@ class KaggleSelectors:
     TRANSFORMERS_IS_FINETUNABLE_SELECTORS: List[str] = [
         'p.sc-gGKoUb.bEqAGC[style*="margin-top"]',  # With margin-top style
         'p.sc-gGKoUb.bEqAGC',  # Fallback - may match multiple, need to filter
+    ]
+
+    # Example Usage selector for variation (appears after selecting a variation)
+    # Target: Parent container that holds both the header and content
+    # The structure is: parent div.sc-cfYtRh.eiwGaI contains:
+    #   - div#example-use (header)
+    #   - div.sc-lkCrJH.ghmUBs (actual content) OR p.sc-hwddKA.dIsQKt (no guide message)
+    # If it contains "This variation does not have a usage guide yet.", the field should be empty
+    TRANSFORMERS_EXAMPLE_USAGE_SELECTORS: List[str] = [
+        'div.sc-cfYtRh.eiwGaI',  # Main container with example usage
+        'div:has(> div#example-use)',  # Parent div containing example-use
     ]
     
     # Fallback CSS selector for description (used with Selenium)
@@ -246,6 +256,7 @@ def get_selectors_for_site(site: str) -> Dict:
             'transformers_variation_license': KaggleSelectors.TRANSFORMERS_VARIATION_LICENSE_SELECTORS,
             'transformers_variation_model_card': KaggleSelectors.TRANSFORMERS_VARIATION_MODEL_CARD_SELECTORS,
             'transformers_is_finetunable': KaggleSelectors.TRANSFORMERS_IS_FINETUNABLE_SELECTORS,
+            'transformers_example_usage': KaggleSelectors.TRANSFORMERS_EXAMPLE_USAGE_SELECTORS,
             'tags': KaggleSelectors.TAG_SELECTORS,
             'tag_links': KaggleSelectors.TAG_LINK_SELECTOR,
             'tag_more_button_span': KaggleSelectors.TAG_MORE_BUTTON_TEXT_SPAN,

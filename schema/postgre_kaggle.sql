@@ -8,6 +8,7 @@ CREATE TABLE kaggle_models (
     usability TEXT,
     short_description TEXT,
     model_card TEXT -- store README or markdown content
+    example_usage TEXT -- store example usage code snippets
 );
 
 -- Table to store tags (many-to-many relationship with models)
@@ -39,5 +40,6 @@ CREATE TABLE transformers_variation__info (
     transformers_variation_license TEXT,
     transformers_variation_downloads INT,
     transformers_model_card TEXT, -- store README or markdown content
-    transformers_is_finetunable BOOLEAN 
+    transformers_is_finetunable BOOLEAN,
+    transformers_example_usage TEXT -- store example usage code snippets
 );

@@ -176,6 +176,7 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
         license_selector = selectors.get('transformers_variation_license')
         model_card_selector = selectors.get('transformers_variation_model_card')
         is_finetunable_selector = selectors.get('transformers_is_finetunable')
+        example_usage_selector = selectors.get('transformers_example_usage')
 
         logger.info(f"Using selectors - action: {action_selector}, list_items: {list_items_selector}")
 
@@ -348,6 +349,7 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                 variation_license = ''
                 variation_model_card = ''
                 variation_is_finetunable = ''
+                variation_example_usage = ''
 
                 # Extract version
                 if version_selector:
@@ -392,25 +394,45 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                     logger.info(f"Variation {variation_counter}: Could not find license with any selector")
 
                 # Extract model card (try multiple selectors)
+                # Model card should be within the variation-specific content area
+                # If not found, leave empty instead of pulling from general page content
                 model_card_selectors = model_card_selector if isinstance(model_card_selector, list) else [model_card_selector] if model_card_selector else []
 
                 for idx, mc_selector in enumerate(model_card_selectors):
                     try:
-                        model_card_elem = driver.find_element(By.CSS_SELECTOR, mc_selector)
-                        # Get the text content, preserving some structure
-                        variation_model_card = model_card_elem.text.strip()
+                        # Try to find all matching elements (there might be multiple)
+                        model_card_elems = driver.find_elements(By.CSS_SELECTOR, mc_selector)
+                        logger.info(f"Variation {variation_counter}: Found {len(model_card_elems)} elements matching model card selector {idx + 1}/{len(model_card_selectors)}: '{mc_selector}'")
 
+                        # Try each element until we find one with content
+                        for elem_idx, model_card_elem in enumerate(model_card_elems):
+                            try:
+                                # Get text content - don't require is_displayed() as some content might be in viewport but not "visible" according to Selenium
+                                text_content = model_card_elem.text.strip()
+
+                                # Only accept if it has meaningful content (reduced threshold to 5 chars to be more inclusive)
+                                if text_content and len(text_content) > 5:
+                                    variation_model_card = text_content
+                                    # Log truncated version (first 100 chars) to avoid log spam
+                                    preview = variation_model_card[:100] + '...' if len(variation_model_card) > 100 else variation_model_card
+                                    logger.info(f"Variation {variation_counter}: Found model card using selector {idx + 1}/{len(model_card_selectors)} (element {elem_idx + 1}/{len(model_card_elems)}) - Preview: {preview}")
+                                    break
+                                else:
+                                    logger.info(f"Variation {variation_counter}: Model card element {elem_idx + 1}/{len(model_card_elems)} found with selector {idx + 1} but content too short ({len(text_content)} chars)")
+                            except Exception as elem_error:
+                                logger.info(f"Variation {variation_counter}: Error extracting text from element {elem_idx + 1}: {elem_error}")
+                                continue
+
+                        # If we found content, break out of selector loop
                         if variation_model_card:
-                            # Log truncated version (first 100 chars) to avoid log spam
-                            preview = variation_model_card[:100] + '...' if len(variation_model_card) > 100 else variation_model_card
-                            logger.info(f"Variation {variation_counter}: Found model card using selector {idx + 1}/{len(model_card_selectors)} - Preview: {preview}")
                             break
+
                     except Exception as e:
                         logger.info(f"Variation {variation_counter}: Model card selector {idx + 1}/{len(model_card_selectors)} failed: {e}")
                         continue
 
                 if not variation_model_card and model_card_selectors:
-                    logger.info(f"Variation {variation_counter}: Could not find model card with any selector")
+                    logger.warning(f"Variation {variation_counter}: Could not find model card with any selector - leaving empty. Tried {len(model_card_selectors)} selectors")
 
                 # Extract is_finetunable (try multiple selectors)
                 # Note: We need to find all matching elements and filter for "Yes"/"No" since
@@ -441,6 +463,49 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                 if not variation_is_finetunable and is_finetunable_selectors:
                     logger.info(f"Variation {variation_counter}: Could not find is_finetunable with any selector")
 
+                # Extract example usage (try multiple selectors)
+                example_usage_selectors = example_usage_selector if isinstance(example_usage_selector, list) else [example_usage_selector] if example_usage_selector else []
+
+                for idx, eu_selector in enumerate(example_usage_selectors):
+                    try:
+                        example_usage_elem = driver.find_element(By.CSS_SELECTOR, eu_selector)
+
+                        # First check if it contains the "no usage guide" message
+                        # Look for the specific paragraph element
+                        try:
+                            no_guide_elem = example_usage_elem.find_element(By.CSS_SELECTOR, 'p.sc-hwddKA.dIsQKt')
+                            if no_guide_elem and 'This variation does not have a usage guide yet.' in no_guide_elem.text:
+                                variation_example_usage = ''
+                                logger.info(f"Variation {variation_counter}: No usage guide available")
+                                break
+                        except:
+                            pass  # No "no guide" message found, continue with extraction
+
+                        # Try to find the content div (sibling to the header)
+                        try:
+                            content_elem = example_usage_elem.find_element(By.CSS_SELECTOR, 'div.sc-lkCrJH.ghmUBs')
+                            variation_example_usage = content_elem.text.strip()
+                        except:
+                            # Fallback: get all text from parent (includes header)
+                            variation_example_usage = example_usage_elem.text.strip()
+                            # Remove the "Example Use" header if present at the start
+                            if variation_example_usage.startswith('Example Use\n'):
+                                variation_example_usage = variation_example_usage[12:].strip()
+                            elif variation_example_usage.startswith('Example Use'):
+                                variation_example_usage = variation_example_usage[11:].strip()
+
+                        if variation_example_usage:
+                            # Log truncated version (first 100 chars) to avoid log spam
+                            preview = variation_example_usage[:100] + '...' if len(variation_example_usage) > 100 else variation_example_usage
+                            logger.info(f"Variation {variation_counter}: Found example usage using selector {idx + 1}/{len(example_usage_selectors)} - Preview: {preview}")
+                            break
+                    except Exception as e:
+                        logger.info(f"Variation {variation_counter}: Example usage selector {idx + 1}/{len(example_usage_selectors)} failed: {e}")
+                        continue
+
+                if not variation_example_usage and example_usage_selectors:
+                    logger.info(f"Variation {variation_counter}: Could not find example usage with any selector")
+
                 # Create variation dictionary
                 variation = {
                     'transformers_variation': f'variation_{variation_counter:02d}',
@@ -449,7 +514,8 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                     'transformers_variation_license': variation_license,
                     'transformers_variation_downloads': variation_downloads,
                     'transformers_model_card': variation_model_card,
-                    'transformers_is_finetunable': variation_is_finetunable
+                    'transformers_is_finetunable': variation_is_finetunable,
+                    'transformers_example_usage': variation_example_usage
                 }
                 variations.append(variation)
                 logger.info(f"Extracted variation_{variation_counter:02d}: {variation_name} (Version: {variation_version}, Downloads: {variation_downloads}, License: {variation_license})")

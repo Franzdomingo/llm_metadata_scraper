@@ -38,3 +38,4 @@ class TransformersVariationItem(scrapy.Item):
     transformers_variation_downloads = scrapy.Field()
     transformers_model_card = scrapy.Field()
     transformers_is_finetunable = scrapy.Field()
+    transformers_example_usage = scrapy.Field()
