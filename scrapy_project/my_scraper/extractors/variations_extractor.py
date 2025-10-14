@@ -363,9 +363,24 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                 # Extract downloads
                 if downloads_selector:
                     try:
-                        downloads_elem = driver.find_element(By.CSS_SELECTOR, downloads_selector)
-                        variation_downloads = downloads_elem.text.strip()
-                        logger.info(f"Variation {variation_counter}: Found downloads '{variation_downloads}'")
+                        # Find all matching elements to ensure we get the right one
+                        downloads_elems = driver.find_elements(By.CSS_SELECTOR, downloads_selector)
+                        logger.info(f"Variation {variation_counter}: Found {len(downloads_elems)} elements matching downloads selector")
+
+                        # Look for the element with numeric content only (no text)
+                        for idx, elem in enumerate(downloads_elems):
+                            text = elem.text.strip()
+                            # Check if text is numeric (digits only, possibly with K/M suffix)
+                            if text and (text.isdigit() or (text[:-1].isdigit() and text[-1] in ['K', 'M', 'k', 'm'])):
+                                variation_downloads = text
+                                logger.info(f"Variation {variation_counter}: Found downloads '{variation_downloads}' from element {idx + 1}/{len(downloads_elems)}")
+                                break
+
+                        # If no numeric-only element found, use the first one as fallback
+                        if not variation_downloads and len(downloads_elems) > 0:
+                            variation_downloads = downloads_elems[0].text.strip()
+                            logger.info(f"Variation {variation_counter}: Using first element for downloads: '{variation_downloads}'")
+
                     except Exception as e:
                         logger.info(f"Variation {variation_counter}: Could not find downloads: {e}")
 
@@ -395,30 +410,36 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
 
                 # Extract model card (try multiple selectors)
                 # Model card should be within the variation-specific content area
-                # If not found, leave empty instead of pulling from general page content
+                # If selector doesn't exist or doesn't find any elements, leave empty
                 model_card_selectors = model_card_selector if isinstance(model_card_selector, list) else [model_card_selector] if model_card_selector else []
 
                 for idx, mc_selector in enumerate(model_card_selectors):
                     try:
                         # Try to find all matching elements (there might be multiple)
                         model_card_elems = driver.find_elements(By.CSS_SELECTOR, mc_selector)
-                        logger.info(f"Variation {variation_counter}: Found {len(model_card_elems)} elements matching model card selector {idx + 1}/{len(model_card_selectors)}: '{mc_selector}'")
+
+                        # If selector doesn't exist (0 elements found), skip and leave field empty
+                        if len(model_card_elems) == 0:
+                            logger.info(f"Variation {variation_counter}: Selector '{mc_selector}' found 0 elements - skipping")
+                            continue
+
+                        logger.info(f"Variation {variation_counter}: Found {len(model_card_elems)} elements matching model card selector: '{mc_selector}'")
 
                         # Try each element until we find one with content
                         for elem_idx, model_card_elem in enumerate(model_card_elems):
                             try:
-                                # Get text content - don't require is_displayed() as some content might be in viewport but not "visible" according to Selenium
+                                # Get text content
                                 text_content = model_card_elem.text.strip()
 
-                                # Only accept if it has meaningful content (reduced threshold to 5 chars to be more inclusive)
+                                # Only accept if it has meaningful content (> 5 chars)
                                 if text_content and len(text_content) > 5:
                                     variation_model_card = text_content
                                     # Log truncated version (first 100 chars) to avoid log spam
                                     preview = variation_model_card[:100] + '...' if len(variation_model_card) > 100 else variation_model_card
-                                    logger.info(f"Variation {variation_counter}: Found model card using selector {idx + 1}/{len(model_card_selectors)} (element {elem_idx + 1}/{len(model_card_elems)}) - Preview: {preview}")
+                                    logger.info(f"Variation {variation_counter}: Found model card - Preview: {preview}")
                                     break
                                 else:
-                                    logger.info(f"Variation {variation_counter}: Model card element {elem_idx + 1}/{len(model_card_elems)} found with selector {idx + 1} but content too short ({len(text_content)} chars)")
+                                    logger.info(f"Variation {variation_counter}: Element {elem_idx + 1} has content too short ({len(text_content)} chars)")
                             except Exception as elem_error:
                                 logger.info(f"Variation {variation_counter}: Error extracting text from element {elem_idx + 1}: {elem_error}")
                                 continue
@@ -428,11 +449,12 @@ def extract_variations(driver: webdriver.Chrome, selectors: Dict, name: str, mod
                             break
 
                     except Exception as e:
-                        logger.info(f"Variation {variation_counter}: Model card selector {idx + 1}/{len(model_card_selectors)} failed: {e}")
+                        logger.info(f"Variation {variation_counter}: Model card selector failed: {e}")
                         continue
 
-                if not variation_model_card and model_card_selectors:
-                    logger.warning(f"Variation {variation_counter}: Could not find model card with any selector - leaving empty. Tried {len(model_card_selectors)} selectors")
+                # Log if field remains empty (this is expected and OK if selector doesn't exist)
+                if not variation_model_card:
+                    logger.info(f"Variation {variation_counter}: Model card field will be empty (selector not found or no content)")
 
                 # Extract is_finetunable (try multiple selectors)
                 # Note: We need to find all matching elements and filter for "Yes"/"No" since
