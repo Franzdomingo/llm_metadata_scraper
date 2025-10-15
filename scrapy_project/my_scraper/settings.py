@@ -53,8 +53,9 @@ DEFAULT_REQUEST_HEADERS = {
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-    'my_scraper.middlewares.SeleniumMiddleware': 800,
     'my_scraper.middlewares.RandomUserAgentMiddleware': 400,
+    'my_scraper.middlewares.ProxyRotationMiddleware': 750,  # Before Selenium
+    'my_scraper.middlewares.SeleniumMiddleware': 800,
 }
 
 # Enable or disable extensions
@@ -111,3 +112,16 @@ SELENIUM_POOL_SIZE = 16  # Number of concurrent Selenium drivers (80% resource u
 REQUEST_FINGERPRINTER_IMPLEMENTATION = '2.7'
 TWISTED_REACTOR = 'twisted.internet.asyncioreactor.AsyncioSelectorReactor'
 FEED_EXPORT_ENCODING = 'utf-8'
+
+# Proxy rotation settings (disabled by default)
+# To enable proxy rotation:
+# 1. Set ENABLE_PROXY_ROTATION = True
+# 2. Add proxy URLs to ROTATING_PROXIES list
+# 3. Proxy format: 'http://username:password@host:port' or 'http://host:port'
+ENABLE_PROXY_ROTATION = False
+ROTATING_PROXIES = [
+    # Example proxies (uncomment and replace with your proxies):
+    # 'http://proxy1.example.com:8080',
+    # 'http://proxy2.example.com:8080',
+    # 'http://username:password@proxy3.example.com:8080',
+]

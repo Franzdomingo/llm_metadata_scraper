@@ -198,23 +198,77 @@ class RandomUserAgentMiddleware:
     """
     Middleware to rotate user agents randomly
     """
-    
+
     def __init__(self, user_agents=None):
         """
         Initialize with a list of user agents
-        
+
         Args:
             user_agents: List of user agent strings (optional)
         """
         self.user_agents = user_agents or GeneralSelectors.USER_AGENTS
-    
+
     @classmethod
     def from_crawler(cls, crawler):
         """Create middleware from crawler settings"""
         return cls()
-    
+
     def process_request(self, request, spider):
         """Set a random user agent for the request"""
         if self.user_agents:
             user_agent = random.choice(self.user_agents)
             request.headers['User-Agent'] = user_agent
+
+
+class ProxyRotationMiddleware:
+    """
+    Middleware to rotate proxies for requests
+
+    Supports both HTTP/HTTPS proxies and can use free proxy lists
+    or paid proxy services.
+    """
+
+    def __init__(self, proxies=None, enable_rotation=False):
+        """
+        Initialize with a list of proxies
+
+        Args:
+            proxies: List of proxy URLs (optional)
+            enable_rotation: Whether to enable proxy rotation
+        """
+        self.proxies = proxies or []
+        self.enable_rotation = enable_rotation
+        self.proxy_index = 0
+        self.logger = logging.getLogger(__name__)
+
+        if self.enable_rotation and not self.proxies:
+            self.logger.warning('Proxy rotation enabled but no proxies configured')
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        """Create middleware from crawler settings"""
+        proxies = crawler.settings.get('ROTATING_PROXIES', [])
+        enable_rotation = crawler.settings.get('ENABLE_PROXY_ROTATION', False)
+        return cls(proxies=proxies, enable_rotation=enable_rotation)
+
+    def process_request(self, request, spider):
+        """Set a proxy for the request"""
+        if not self.enable_rotation or not self.proxies:
+            return None
+
+        # Skip proxy for Selenium requests (handle in Selenium driver)
+        if request.meta.get('selenium'):
+            return None
+
+        # Round-robin proxy selection
+        proxy = self.proxies[self.proxy_index % len(self.proxies)]
+        self.proxy_index += 1
+
+        request.meta['proxy'] = proxy
+        self.logger.debug(f'Using proxy: {proxy}')
+
+    def process_exception(self, request, exception, spider):
+        """Handle proxy failures"""
+        if request.meta.get('proxy'):
+            self.logger.warning(f'Proxy {request.meta["proxy"]} failed: {exception}')
+        return None
