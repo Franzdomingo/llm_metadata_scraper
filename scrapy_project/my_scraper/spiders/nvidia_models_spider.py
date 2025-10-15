@@ -6,6 +6,7 @@ Scrapes model metadata from NVIDIA Build (https://build.nvidia.com/models)
 import scrapy
 import time
 import random
+import re
 from datetime import datetime
 from typing import Dict, List
 from selenium import webdriver
@@ -14,6 +15,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import StaleElementReferenceException
 from lxml import html as lxml_html
+from bs4 import BeautifulSoup
 
 from my_scraper.items import NvidiaModelItem
 from my_scraper.selectors.site_selectors import get_selectors_for_site
@@ -61,6 +63,92 @@ class NvidiaModelsSpider(scrapy.Spider):
 
         if self.skip_modelcard:
             self.logger.info('Model card extraction is DISABLED - will scrape faster')
+
+    def clean_model_card_html(self, html_content):
+        """
+        Clean model card HTML by removing UI elements and keeping only content
+
+        Args:
+            html_content: Raw HTML string from model card page
+
+        Returns:
+            Cleaned HTML string with only semantic content
+        """
+        if not html_content:
+            return ''
+
+        try:
+            soup = BeautifulSoup(html_content, 'html.parser')
+
+            # Remove unwanted elements
+            # 1. Remove all SVG elements (icons, graphics)
+            for svg in soup.find_all('svg'):
+                svg.decompose()
+
+            # 2. Remove all button elements
+            for button in soup.find_all('button'):
+                button.decompose()
+
+            # 3. Remove elements with specific classes that are UI-only
+            ui_classes = [
+                'btn-', 'flex', 'grid', 'rounded', 'border',
+                'bg-', 'hover:', 'active:', 'aria-', 'gap-',
+                'inline-flex', 'items-center', 'justify-center'
+            ]
+
+            for element in soup.find_all():
+                if element.get('class'):
+                    classes = ' '.join(element.get('class', []))
+                    # If element has only UI classes and no semantic content, remove it
+                    if any(ui_class in classes for ui_class in ui_classes):
+                        # But keep if it has important semantic tags inside
+                        if not element.find(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'a', 'code', 'pre']):
+                            element.decompose()
+                            continue
+
+            # 4. Clean up attributes on remaining elements
+            # Keep only semantic HTML with minimal attributes
+            for tag in soup.find_all():
+                # Preserve href on links, but clean the rest
+                if tag.name == 'a':
+                    attrs_to_keep = {}
+                    if tag.get('href'):
+                        attrs_to_keep['href'] = tag['href']
+                    if tag.get('target'):
+                        attrs_to_keep['target'] = tag['target']
+                    tag.attrs = attrs_to_keep
+                elif tag.name == 'code':
+                    # Keep code elements clean
+                    tag.attrs = {}
+                elif tag.name == 'pre':
+                    # Keep pre elements clean
+                    tag.attrs = {}
+                elif tag.name in ['div', 'span']:
+                    # For div/span, keep only if they have important content
+                    # Otherwise strip them but keep content
+                    if not tag.find(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'a', 'pre']):
+                        # Replace div/span with its contents
+                        tag.unwrap()
+                    else:
+                        tag.attrs = {}
+                else:
+                    # For semantic tags (h1, h2, p, ul, etc.), remove all attributes
+                    tag.attrs = {}
+
+            # Get the cleaned HTML
+            cleaned_html = str(soup)
+
+            # Post-processing cleanup
+            # Remove excessive whitespace
+            cleaned_html = re.sub(r'\n\s*\n', '\n\n', cleaned_html)
+            cleaned_html = re.sub(r'  +', ' ', cleaned_html)
+
+            return cleaned_html.strip()
+
+        except Exception as e:
+            self.logger.warning(f'Error cleaning HTML: {e}')
+            # Return original if cleaning fails
+            return html_content
 
     def safe_get_attribute(self, driver, selector, attribute, max_retries=3):
         """
@@ -268,11 +356,10 @@ class NvidiaModelsSpider(scrapy.Spider):
                         self.logger.warning(f'Model {model_name} has no URL attribute')
                         continue
 
-                    # Extract base URL if full URL is provided
-                    if model_url.startswith('http'):
-                        from urllib.parse import urlparse
-                        parsed = urlparse(model_url)
-                        model_url = parsed.path
+                    # Ensure we have the full URL
+                    if not model_url.startswith('http'):
+                        # If it's just a path, prepend the base URL
+                        model_url = f'https://build.nvidia.com{model_url}'
 
                     # Check for duplicates - skip if already processed
                     if model_url in self.processed_urls:
@@ -360,7 +447,7 @@ class NvidiaModelsSpider(scrapy.Spider):
                     yield item
                 else:
                     # Make request to modelcard page to extract model card content
-                    modelcard_url = f"https://build.nvidia.com{model_url}/modelcard"
+                    modelcard_url = f"{model_url}/modelcard"
                     self.logger.debug(f"Requesting modelcard: {modelcard_url}")
 
                     yield scrapy.Request(
@@ -508,8 +595,10 @@ class NvidiaModelsSpider(scrapy.Spider):
                                 break
 
                     if model_card_html and model_card_html.strip():
-                        item['model_card'] = model_card_html.strip()
-                        self.logger.info(f"✓ Extracted model card for {model_name} ({len(model_card_html)} chars)")
+                        # Clean the HTML to remove UI elements
+                        cleaned_html = self.clean_model_card_html(model_card_html)
+                        item['model_card'] = cleaned_html
+                        self.logger.info(f"✓ Extracted model card for {model_name} ({len(model_card_html)} chars -> {len(cleaned_html)} chars after cleaning)")
                     else:
                         # Fallback to text content if outerHTML is empty
                         model_card_text = None
