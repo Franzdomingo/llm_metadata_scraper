@@ -166,11 +166,25 @@ class NvidiaModelsSpider(scrapy.Spider):
                         traceback.print_exc()
                         item['tags'] = []
 
-                    # Log summary
+                    # Log summary from main page
                     tags_count = len(item['tags']) if item['tags'] else 0
-                    self.logger.info(f"DONE {model_name} - URL: {model_url} - Tags: {tags_count}")
+                    self.logger.info(f"Extracted {tags_count} tags for {model_name}")
 
-                    yield item
+                    # Make request to modelcard page to extract model card content
+                    modelcard_url = f"https://build.nvidia.com{model_url}/modelcard"
+                    self.logger.info(f"Requesting modelcard: {modelcard_url}")
+
+                    yield scrapy.Request(
+                        url=modelcard_url,
+                        callback=self.parse_modelcard,
+                        meta={
+                            'selenium': True,
+                            'selenium_wait': 3,
+                            'selenium_wait_selector': 'div.prose',
+                            'item': item,  # Pass the partially filled item
+                        },
+                        dont_filter=True
+                    )
 
                 except Exception as e:
                     self.logger.error(f'Error processing model card {idx + 1}: {e}')
@@ -184,3 +198,77 @@ class NvidiaModelsSpider(scrapy.Spider):
             self.logger.error(f'Error parsing NVIDIA models page: {e}')
             import traceback
             traceback.print_exc()
+
+    def parse_modelcard(self, response):
+        """
+        Parse NVIDIA model card page and extract model card content
+
+        Args:
+            response: Scrapy response object from /modelcard page
+
+        Yields:
+            Complete NvidiaModelItem with model card content
+        """
+        # Get the partially filled item from meta
+        item = response.meta.get('item')
+
+        if not item:
+            self.logger.error('No item found in meta for modelcard page')
+            return
+
+        model_name = item.get('name', 'Unknown')
+        model_url = item.get('nvidia_url', 'Unknown')
+
+        # Use the driver from the middleware
+        driver = response.meta.get('driver')
+
+        if not driver:
+            self.logger.warning(f'No driver available for modelcard page: {model_name}')
+            # Yield item without model card if driver unavailable
+            item['model_card'] = ''
+            yield item
+            return
+
+        try:
+            # Get model card content selector
+            model_card_selector = self.selectors.get('model_card_content', 'div.prose.prose-markdown-compat')
+
+            # Try to find the model card content div
+            try:
+                model_card_element = driver.find_element(By.CSS_SELECTOR, model_card_selector)
+
+                # Extract the HTML content or text content
+                # Using innerHTML to preserve formatting
+                model_card_html = model_card_element.get_attribute('innerHTML')
+
+                if model_card_html and model_card_html.strip():
+                    item['model_card'] = model_card_html.strip()
+                    self.logger.info(f"✓ Extracted model card for {model_name} ({len(model_card_html)} chars)")
+                else:
+                    # Fallback to text content if innerHTML is empty
+                    model_card_text = model_card_element.text.strip()
+                    if model_card_text:
+                        item['model_card'] = model_card_text
+                        self.logger.info(f"✓ Extracted model card text for {model_name} ({len(model_card_text)} chars)")
+                    else:
+                        item['model_card'] = ''
+                        self.logger.warning(f"Model card element found but empty for {model_name}")
+
+            except Exception as e:
+                self.logger.warning(f'Could not find model card element for {model_name}: {e}')
+                item['model_card'] = ''
+
+            # Log final summary
+            tags_count = len(item.get('tags', [])) if item.get('tags') else 0
+            has_model_card = 'Yes' if item.get('model_card') else 'No'
+            self.logger.info(f"DONE {model_name} - URL: {model_url} - Tags: {tags_count} - ModelCard: {has_model_card}")
+
+            yield item
+
+        except Exception as e:
+            self.logger.error(f'Error parsing modelcard for {model_name}: {e}')
+            import traceback
+            traceback.print_exc()
+            # Yield item without model card in case of error
+            item['model_card'] = ''
+            yield item

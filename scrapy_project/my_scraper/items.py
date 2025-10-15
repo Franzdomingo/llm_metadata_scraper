@@ -46,4 +46,5 @@ class NvidiaModelItem(scrapy.Item):
     name = scrapy.Field()
     nvidia_url = scrapy.Field()
     tags = scrapy.Field()
+    model_card = scrapy.Field()  # Model card content from /modelcard page
     scraped_on = scrapy.Field()  # Timestamp when data was scraped

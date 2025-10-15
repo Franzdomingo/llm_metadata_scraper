@@ -261,6 +261,11 @@ class NvidiaSelectors:
     # Same structure as visible tags
     POPOVER_TAG_BUTTONS: str = 'button.inline-flex.min-w-fit'
 
+    # Model card content selector (from /modelcard page)
+    # Target: div containing the full model card markdown content
+    # Example: <div class="prose prose-markdown-compat max-w-[85ch]">...</div>
+    MODEL_CARD_CONTENT: str = 'div.prose.prose-markdown-compat'
+
 
 class GeneralSelectors:
     """Configuration class for general scraping selectors"""
@@ -338,6 +343,7 @@ def get_selectors_for_site(site: str) -> Dict:
             'popover_tags_container': NvidiaSelectors.POPOVER_TAGS_CONTAINER,
             'popover_tags_container_alt': NvidiaSelectors.POPOVER_TAGS_CONTAINER_ALT,
             'popover_tag_buttons': NvidiaSelectors.POPOVER_TAG_BUTTONS,
+            'model_card_content': NvidiaSelectors.MODEL_CARD_CONTENT,
         }
     }
     
