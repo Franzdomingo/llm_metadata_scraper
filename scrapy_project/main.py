@@ -10,374 +10,189 @@ Usage:
     python main.py --all                # Run all spiders in sequence
 """
 
-import os
-import sys
-import importlib
-import inspect
 import argparse
+import sys
 from pathlib import Path
-from typing import List, Dict, Tuple
-import scrapy
-from scrapy.utils.project import get_project_settings
-from scrapy.crawler import CrawlerProcess
-from scrapy.spiders import Spider
+
+# Add project to path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from my_scraper.spider_manager import SpiderManager
+from my_scraper.cli_interface import CLIInterface, SpiderMenuInterface
+from my_scraper.settings_manager import SettingsManager
+from my_scraper.settings_menu import SettingsMenu
 
 
-class SpiderManager:
-    """Automatically detect and manage Scrapy spiders"""
-    
+class ScraperApplication:
+    """Main application controller"""
+
     def __init__(self):
+        """Initialize the scraper application"""
         self.project_dir = Path(__file__).parent
-        self.spiders_dir = self.project_dir / 'my_scraper' / 'spiders'
-        self.detected_spiders = []
-        self._detect_spiders()
-    
-    def _detect_spiders(self):
-        """Automatically detect all spider classes in the spiders directory"""
-        print("Detecting available spiders...")
-        
-        # Add project to path
-        sys.path.insert(0, str(self.project_dir))
-        
-        # Scan spider files
-        spider_files = list(self.spiders_dir.glob('*_spider.py'))
-        
-        for spider_file in spider_files:
-            module_name = spider_file.stem
-            
-            try:
-                # Import the module
-                module = importlib.import_module(f'my_scraper.spiders.{module_name}')
-                
-                # Find all Spider subclasses
-                for name, obj in inspect.getmembers(module, inspect.isclass):
-                    if (issubclass(obj, Spider) and 
-                        obj is not Spider and 
-                        hasattr(obj, 'name') and 
-                        obj.name != 'base_spider'):
-                        
-                        spider_info = {
-                            'name': obj.name,
-                            'class': obj,
-                            'module': module_name,
-                            'description': self._get_spider_description(obj),
-                            'parameters': self._get_spider_parameters(obj)
-                        }
-                        self.detected_spiders.append(spider_info)
-                        print(f"  [+] Found spider: {obj.name}")
-            
-            except Exception as e:
-                print(f"  [!] Error loading {module_name}: {e}")
-        
-        print(f"\nTotal spiders detected: {len(self.detected_spiders)}\n")
-    
-    def _get_spider_description(self, spider_class) -> str:
-        """Extract spider description from docstring"""
-        if spider_class.__doc__:
-            # Get first line of docstring
-            lines = spider_class.__doc__.strip().split('\n')
-            return lines[0].strip() if lines else "No description"
-        return "No description"
-    
-    def _get_spider_parameters(self, spider_class) -> List[Tuple[str, str, str]]:
-        """Extract spider parameters from __init__ method"""
-        params = []
-        
-        try:
-            init_method = spider_class.__init__
-            sig = inspect.signature(init_method)
-            
-            for param_name, param in sig.parameters.items():
-                if param_name in ['self', 'args', 'kwargs']:
-                    continue
-                
-                default = param.default if param.default != inspect.Parameter.empty else None
-                param_type = "str"  # Default type
-                
-                # Try to infer type from default value
-                if default is not None:
-                    param_type = type(default).__name__
-                
-                params.append((param_name, param_type, str(default)))
-        
-        except Exception:
-            pass
-        
-        return params
-    
+        self.spider_manager = SpiderManager(self.project_dir)
+        self.cli = CLIInterface(width=80)
+        self.menu = SpiderMenuInterface(self.cli)
+
     def list_spiders(self):
-        """Display all detected spiders"""
-        if not self.detected_spiders:
-            print("[!] No spiders detected!")
+        """Display all detected spiders in a formatted table"""
+        spiders = self.spider_manager.get_all_spiders()
+
+        if not spiders:
+            self.cli.display_error("No spiders detected!")
             return
-        
-        print("=" * 80)
-        print("Available Spiders".center(80))
-        print("=" * 80)
-        
-        for i, spider in enumerate(self.detected_spiders, 1):
-            print(f"\n{i}. {spider['name']}")
-            print(f"   Description: {spider['description']}")
-            
+
+        self.cli.display_header("AVAILABLE SPIDERS")
+        print()
+
+        # Display in table format
+        for i, spider in enumerate(spiders, 1):
+            print(f"{i}. {spider['name']}")
+            self.cli.display_info("   Description", spider['description'], key_width=18)
+
             if spider['parameters']:
-                print(f"   Parameters:")
+                self.cli.display_info("   Parameters", "", key_width=18)
                 for param_name, param_type, default in spider['parameters']:
-                    default_str = f" (default: {default})" if default != "None" else ""
-                    print(f"      - {param_name} ({param_type}){default_str}")
-            
-            print(f"   Module: {spider['module']}.py")
-        
-        print("\n" + "=" * 80)
-    
-    def get_spider_by_name(self, name: str) -> Dict:
-        """Get spider info by name"""
-        for spider in self.detected_spiders:
-            if spider['name'] == name:
-                return spider
-        return None
-    
-    def run_spider(self, spider_name: str, spider_args: Dict = None):
-        """Run a specific spider"""
-        spider_info = self.get_spider_by_name(spider_name)
-        
+                    default_str = f"(default: {default})" if default != "None" else "(required)"
+                    print(f"      - {param_name} ({param_type}) {default_str}")
+
+            self.cli.display_info("   Module", f"{spider['module']}.py", key_width=18)
+            print()
+
+        self.cli.display_separator("=")
+
+    def run_spider(self, spider_name: str, spider_args: dict = None):
+        """
+        Run a specific spider
+
+        Args:
+            spider_name: Name of the spider to run
+            spider_args: Optional spider arguments
+        """
+        spider_info = self.spider_manager.get_spider_by_name(spider_name)
+
         if not spider_info:
-            print(f"[!] Spider '{spider_name}' not found!")
+            self.cli.display_error(f"Spider '{spider_name}' not found!")
             self.list_spiders()
             return False
-        
-        print(f"\n{'=' * 80}")
-        print(f"Running Spider: {spider_name}".center(80))
-        print(f"{'=' * 80}\n")
-        
-        # Get settings
-        os.chdir(self.project_dir)
-        settings = get_project_settings()
-        
-        # Create a fresh crawler process for each spider
-        # This is necessary because CrawlerProcess.start() can only be called once
-        process = CrawlerProcess(settings)
-        
-        # Add spider with arguments
-        spider_args = spider_args or {}
-        process.crawl(spider_info['class'], **spider_args)
-        
-        # Start crawling
-        try:
-            process.start()  # This blocks until crawling is finished
-            print(f"\n[+] Spider '{spider_name}' completed successfully!")
-            return True
-        except Exception as e:
-            print(f"\n[!] Error running spider '{spider_name}': {e}")
-            import traceback
-            traceback.print_exc()
-            return False
-    
+
+        self.menu.display_execution_header(spider_name)
+
+        success = self.spider_manager.run_spider(spider_name, spider_args)
+
+        if success:
+            self.cli.display_success(f"Spider '{spider_name}' completed!")
+        else:
+            self.cli.display_error(f"Spider '{spider_name}' failed!")
+
+        return success
+
     def run_all_spiders(self):
-        """Run all spiders in sequence, with smart chaining for kaggle spiders"""
-        if not self.detected_spiders:
-            print("[!] No spiders detected!")
+        """Run all spiders in sequence"""
+        spiders = self.spider_manager.get_all_spiders()
+
+        if not spiders:
+            self.cli.display_error("No spiders detected!")
             return
 
-        print(f"\nRunning all spiders with intelligent chaining...\n")
+        self.cli.display_header("RUNNING ALL SPIDERS")
+        print("\nExecuting spiders with intelligent chaining...\n")
+        self.cli.display_separator()
 
-        results = []
-        kaggle_links_output = None
+        results = self.spider_manager.run_all_spiders()
 
-        for spider in self.detected_spiders:
-            print(f"\n{'=' * 80}")
-            print(f"Starting: {spider['name']}".center(80))
-            print(f"{'=' * 80}\n")
-
-            # Special handling for kaggle_metadata spider
-            if spider['name'] == 'kaggle_metadata':
-                # Check if we just ran kaggle_links spider
-                if kaggle_links_output:
-                    print(f"[+] Using output from kaggle_links spider: {kaggle_links_output}")
-                    # Run with the specific input file
-                    success = self._run_spider_subprocess(
-                        spider['name'],
-                        {'input_file': kaggle_links_output}
-                    )
-                else:
-                    # Look for most recent kaggle_links output
-                    import glob
-                    output_dir = self.project_dir / 'output'
-                    json_pattern = str(output_dir / 'kaggle_links_*.json')
-                    matching_files = glob.glob(json_pattern)
-
-                    if matching_files:
-                        most_recent = max(matching_files, key=os.path.getctime)
-                        print(f"[+] Found recent kaggle_links output: {most_recent}")
-                        success = self._run_spider_subprocess(
-                            spider['name'],
-                            {'input_file': most_recent}
-                        )
-                    else:
-                        print("[!] Warning: No kaggle_links output found. Running without input file...")
-                        success = self._run_spider_subprocess(spider['name'])
-            else:
-                # Run normally
-                success = self._run_spider_subprocess(spider['name'])
-
-                # If this was kaggle_links spider, find its output file
-                if spider['name'] == 'kaggle_links' and success:
-                    import glob
-                    import time
-                    # Wait a moment for file to be written
-                    time.sleep(1)
-                    output_dir = self.project_dir / 'output'
-                    json_pattern = str(output_dir / 'kaggle_links_*.json')
-                    matching_files = glob.glob(json_pattern)
-
-                    if matching_files:
-                        # Get the most recent file (should be the one we just created)
-                        kaggle_links_output = max(matching_files, key=os.path.getctime)
-                        print(f"[+] Kaggle links output saved to: {kaggle_links_output}")
-
-            results.append((spider['name'], success))
-
-        # Summary
-        print(f"\n{'=' * 80}")
-        print("Summary".center(80))
-        print(f"{'=' * 80}\n")
-
-        for spider_name, success in results:
-            status = "[+] Success" if success else "[!] Failed"
-            print(f"  {spider_name}: {status}")
-
-        print(f"\n{'=' * 80}\n")
-    
-    def _run_spider_subprocess(self, spider_name: str, spider_args: Dict = None):
-        """Run a spider in a subprocess to avoid Twisted reactor issues"""
-        import subprocess
-        
-        # Build command to run spider via run.py
-        cmd = [sys.executable, 'run.py', spider_name]
-        
-        # Add arguments if provided
-        if spider_args:
-            args_str = ','.join([f'{k}={v}' for k, v in spider_args.items()])
-            cmd.extend(['-a', args_str])
-        
-        try:
-            result = subprocess.run(
-                cmd,
-                cwd=self.project_dir,
-                capture_output=False,  # Show output in real-time
-                check=False
-            )
-            
-            if result.returncode == 0:
-                print(f"\n[+] Spider '{spider_name}' completed successfully!")
-                return True
-            else:
-                print(f"\n[!] Spider '{spider_name}' failed with exit code {result.returncode}")
-                return False
-                
-        except Exception as e:
-            print(f"\n[!] Error running spider '{spider_name}': {e}")
-            import traceback
-            traceback.print_exc()
-            return False
-    
-    def interactive_menu(self):
-        """Display interactive menu for spider selection"""
-        while True:
-            print("\n" + "=" * 80)
-            print("LLM Metadata Scraper - Interactive Menu".center(80))
-            print("=" * 80)
-
-            if not self.detected_spiders:
-                print("\n[!] No spiders detected!")
-                break
-
-            print("\nAvailable Spiders:")
-            for i, spider in enumerate(self.detected_spiders, 1):
-                print(f"  {i}. {spider['name']} - {spider['description']}")
-
-            print(f"\n  {len(self.detected_spiders) + 1}. Run ALL spiders")
-            print(f"  {len(self.detected_spiders) + 2}. Settings Menu")
-            print(f"  0. Exit")
-            
-            try:
-                choice = input("\nSelect spider number (0 to exit): ").strip()
-
-                if choice == '0':
-                    print("\nGoodbye!")
-                    break
-
-                choice_num = int(choice)
-
-                if choice_num == len(self.detected_spiders) + 1:
-                    # Run all spiders
-                    self.run_all_spiders()
-                    break  # Exit after running all
-
-                elif choice_num == len(self.detected_spiders) + 2:
-                    # Open settings menu
-                    self.open_settings_menu()
-                    continue  # Return to main menu after settings
-
-                elif 1 <= choice_num <= len(self.detected_spiders):
-                    spider = self.detected_spiders[choice_num - 1]
-                    
-                    # Ask for parameters
-                    spider_args = {}
-                    if spider['parameters']:
-                        print(f"\nSpider parameters (press Enter to use defaults):")
-                        for param_name, param_type, default in spider['parameters']:
-                            default_str = f" [{default}]" if default != "None" else ""
-                            value = input(f"  {param_name}{default_str}: ").strip()
-                            
-                            if value:
-                                # Convert to appropriate type
-                                if param_type == 'int':
-                                    spider_args[param_name] = int(value)
-                                elif param_type == 'float':
-                                    spider_args[param_name] = float(value)
-                                elif param_type == 'bool':
-                                    spider_args[param_name] = value.lower() in ['true', 'yes', '1', 'y']
-                                else:
-                                    spider_args[param_name] = value
-                    
-                    # Run spider
-                    self.run_spider(spider['name'], spider_args)
-                    break  # Exit after running
-                
-                else:
-                    print(f"[!] Invalid choice! Please select 0-{len(self.detected_spiders) + 2}")
-
-            except ValueError:
-                print("[!] Invalid input! Please enter a number.")
-            except KeyboardInterrupt:
-                print("\n\nInterrupted. Goodbye!")
-                break
-            except Exception as e:
-                print(f"[!] Error: {e}")
+        # Display summary
+        self.menu.display_summary(results)
 
     def open_settings_menu(self):
         """Open the settings configuration menu"""
         try:
-            from my_scraper.settings_manager import SettingsManager
-            from my_scraper.settings_menu import SettingsMenu
-
             # Get config file path
             config_file = self.project_dir / 'my_scraper' / 'scraper_config.json'
 
             # Create settings manager and menu
             manager = SettingsManager(config_file=str(config_file))
-            menu = SettingsMenu(manager)
+            settings_menu = SettingsMenu(manager)
 
             # Run the settings menu
-            menu.run()
+            settings_menu.run()
 
         except ImportError as e:
-            print(f"\n[!] Error: Settings menu module not found: {e}")
+            self.cli.display_error(f"Settings menu module not found: {e}")
             print("[!] Make sure settings_manager.py and settings_menu.py are in my_scraper/")
         except Exception as e:
-            print(f"\n[!] Error opening settings menu: {e}")
+            self.cli.display_error(f"Error opening settings menu: {e}")
             import traceback
             traceback.print_exc()
+
+    def interactive_menu(self):
+        """Display interactive menu for spider selection"""
+        while True:
+            spiders = self.spider_manager.get_all_spiders()
+
+            # Prepare extra options
+            num_spiders = len(spiders)
+            extra_options = [
+                (num_spiders + 1, "Run ALL Spiders", "Execute all spiders in sequence"),
+                (num_spiders + 2, "Settings Menu", "Configure scraper performance settings"),
+                (0, "Exit", "Quit the application")
+            ]
+
+            # Display menu
+            self.menu.display_main_menu(spiders, extra_options)
+
+            # Get user choice
+            try:
+                choice = self.menu.get_spider_choice(num_spiders, len(extra_options))
+
+                if choice == '0':
+                    print("\n✓ Goodbye!\n")
+                    break
+
+                choice_num = int(choice)
+
+                if choice_num == num_spiders + 1:
+                    # Run all spiders
+                    self.run_all_spiders()
+                    self.cli.pause()
+                    break  # Exit after running all
+
+                elif choice_num == num_spiders + 2:
+                    # Open settings menu
+                    self.open_settings_menu()
+                    continue  # Return to main menu after settings
+
+                elif 1 <= choice_num <= num_spiders:
+                    # Run selected spider
+                    spider = self.spider_manager.get_spider_by_index(choice_num - 1)
+
+                    if spider:
+                        # Show spider details
+                        self.menu.display_spider_details(spider)
+
+                        # Get parameters if needed
+                        spider_args = self.menu.get_spider_parameters(spider)
+
+                        # Confirm execution
+                        if self.cli.confirm("Run this spider?", default=True):
+                            self.run_spider(spider['name'], spider_args)
+                            self.cli.pause()
+                            break  # Exit after running
+
+                else:
+                    self.cli.display_error(f"Invalid choice! Please select 0-{num_spiders + len(extra_options)}")
+                    self.cli.pause()
+
+            except ValueError:
+                self.cli.display_error("Invalid input! Please enter a number.")
+                self.cli.pause()
+            except KeyboardInterrupt:
+                print("\n\n✓ Interrupted. Goodbye!\n")
+                break
+            except Exception as e:
+                self.cli.display_error(f"Unexpected error: {e}")
+                import traceback
+                traceback.print_exc()
+                self.cli.pause()
 
 
 def main():
@@ -395,40 +210,40 @@ Examples:
   python main.py --all                              # Run all spiders
         """
     )
-    
+
     parser.add_argument(
         '--list', '-l',
         action='store_true',
         help='List all available spiders'
     )
-    
+
     parser.add_argument(
         '--spider', '-s',
         type=str,
         help='Run specific spider by name'
     )
-    
+
     parser.add_argument(
         '--args', '-a',
         type=str,
         help='Spider arguments in format: key1=value1,key2=value2'
     )
-    
+
     parser.add_argument(
         '--all',
         action='store_true',
         help='Run all spiders in sequence'
     )
-    
+
     args = parser.parse_args()
-    
-    # Initialize spider manager
-    manager = SpiderManager()
-    
+
+    # Initialize application
+    app = ScraperApplication()
+
     # Handle different modes
     if args.list:
-        manager.list_spiders()
-    
+        app.list_spiders()
+
     elif args.spider:
         # Parse spider arguments
         spider_args = {}
@@ -437,15 +252,15 @@ Examples:
                 if '=' in arg:
                     key, value = arg.split('=', 1)
                     spider_args[key.strip()] = value.strip()
-        
-        manager.run_spider(args.spider, spider_args)
-    
+
+        app.run_spider(args.spider, spider_args)
+
     elif args.all:
-        manager.run_all_spiders()
-    
+        app.run_all_spiders()
+
     else:
         # Interactive menu
-        manager.interactive_menu()
+        app.interactive_menu()
 
 
 if __name__ == '__main__':

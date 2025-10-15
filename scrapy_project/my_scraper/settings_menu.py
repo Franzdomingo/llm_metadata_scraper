@@ -6,6 +6,7 @@ Provides a user-friendly interface for viewing and editing scraper settings
 import os
 import sys
 from my_scraper.settings_manager import SettingsManager
+from my_scraper.cli_interface import CLIInterface, Table
 
 
 class SettingsMenu:
@@ -13,70 +14,110 @@ class SettingsMenu:
     Interactive CLI menu for settings configuration
     """
 
-    def __init__(self, settings_manager: SettingsManager):
+    def __init__(self, settings_manager: SettingsManager, width: int = 80):
         """
         Initialize menu
 
         Args:
             settings_manager: SettingsManager instance
+            width: Fixed table width (default: 80)
         """
         self.manager = settings_manager
-
-    def clear_screen(self):
-        """Clear terminal screen"""
-        os.system('cls' if os.name == 'nt' else 'clear')
+        self.cli = CLIInterface(width)
+        self.table = Table(width)
 
     def display_header(self):
         """Display menu header"""
-        print("\n" + "="*70)
-        print(" "*20 + "SCRAPER SETTINGS MENU")
-        print("="*70)
+        print("\n" + self.table.header("SCRAPER SETTINGS MENU"))
 
     def display_main_menu(self):
         """Display main menu options"""
-        print("\n" + "-"*70)
-        print("MENU OPTIONS:")
-        print("-"*70)
-        print("1. View System Information")
-        print("2. View All Settings")
-        print("3. Edit a Setting")
-        print("4. Reset to Defaults")
-        print("5. Save Settings")
-        print("6. Load Settings")
-        print("7. Apply Settings to settings.py")
-        print("8. Auto-Configure (Recommended)")
-        print("9. Exit Menu")
-        print("-"*70)
+        self.cli.display_section("Menu Options")
+
+        options = [
+            (1, "View System Information", "Display CPU cores and memory"),
+            (2, "View All Settings", "Show current configuration values"),
+            (3, "Edit a Setting", "Modify individual settings"),
+            (4, "Reset to Defaults", "Restore factory defaults"),
+            (5, "Save Settings", "Save to config file"),
+            (6, "Load Settings", "Load from config file"),
+            (7, "Apply Settings to settings.py", "Make changes permanent"),
+            (8, "Auto-Configure (Recommended)", "Use preset configurations"),
+            (9, "Exit Menu", "Return to main menu")
+        ]
+
+        self.cli.display_menu_options(options)
 
     def view_system_info(self):
         """View system information"""
-        self.clear_screen()
+        self.cli.clear_screen()
         self.display_header()
-        self.manager.display_system_info()
-        input("\nPress Enter to continue...")
+
+        self.cli.display_section("System Information")
+        print()
+        self.cli.display_info("CPU Cores", str(self.manager.cpu_count), key_width=25)
+
+        if self.manager.system_memory_gb:
+            self.cli.display_info("System Memory", f"{self.manager.system_memory_gb:.2f} GB", key_width=25)
+        else:
+            self.cli.display_info("System Memory", "Unable to detect", key_width=25)
+
+        self.cli.display_separator()
+        self.cli.pause()
 
     def view_all_settings(self):
         """View all current settings"""
-        self.clear_screen()
+        self.cli.clear_screen()
         self.display_header()
-        self.manager.display_all_settings()
-        input("\nPress Enter to continue...")
+
+        self.cli.display_section("Current Settings")
+        print()
+
+        for i, (key, config) in enumerate(self.manager.settings_schema.items(), 1):
+            value = config['value']
+            desc = config['description']
+
+            # Check if value exceeds recommended
+            warning_indicator = ""
+            if 'recommended_max' in config and value > config['recommended_max']:
+                warning_indicator = " ⚠"
+            elif 'recommended_min' in config and value < config['recommended_min']:
+                warning_indicator = " ⚠"
+
+            print(f"\n{i}. {key}{warning_indicator}")
+            self.cli.display_info("   Current Value", str(value), key_width=20)
+            self.cli.display_info("   Description", desc, key_width=20)
+
+            # Show limits
+            limits = []
+            if 'min' in config:
+                limits.append(f"min: {config['min']}")
+            if 'max' in config:
+                limits.append(f"max: {config['max']}")
+            if 'recommended_max' in config:
+                limits.append(f"recommended: {config['recommended_max']}")
+
+            if limits:
+                self.cli.display_info("   Limits", ", ".join(limits), key_width=20)
+
+        print()
+        self.cli.display_separator()
+        self.cli.pause()
 
     def edit_setting(self):
         """Edit a specific setting"""
-        self.clear_screen()
+        self.cli.clear_screen()
         self.display_header()
-        self.manager.display_all_settings()
 
-        print("\n" + "-"*70)
-        print("EDIT SETTING")
-        print("-"*70)
+        # Show all settings first
+        self.view_all_settings()
+
+        self.cli.display_section("Edit Setting")
 
         # Get setting name
         settings_list = list(self.manager.settings_schema.keys())
-        print("\nEnter the number of the setting to edit (or 'q' to cancel):")
 
-        choice = input("\nYour choice: ").strip()
+        choice = self.cli.get_input("\nEnter setting number (or 'q' to cancel)")
 
         if choice.lower() == 'q':
             return
@@ -84,66 +125,63 @@ class SettingsMenu:
         try:
             setting_index = int(choice) - 1
             if setting_index < 0 or setting_index >= len(settings_list):
-                print("\n✗ Invalid selection")
-                input("\nPress Enter to continue...")
+                self.cli.display_error("Invalid selection")
+                self.cli.pause()
                 return
 
             setting_key = settings_list[setting_index]
             config = self.manager.settings_schema[setting_key]
 
-            print(f"\n" + "-"*70)
-            print(f"Editing: {setting_key}")
-            print(f"Current Value: {config['value']}")
-            print(f"Description: {config['description']}")
+            self.cli.clear_screen()
+            self.display_header()
+            self.cli.display_section(f"Editing: {setting_key}")
+
+            print()
+            self.cli.display_info("Current Value", str(config['value']), key_width=25)
+            self.cli.display_info("Description", config['description'], key_width=25)
 
             # Show limits
-            limits_info = []
+            limits = []
             if 'min' in config:
-                limits_info.append(f"Minimum: {config['min']}")
+                limits.append(f"min: {config['min']}")
             if 'max' in config:
-                limits_info.append(f"Maximum: {config['max']}")
+                limits.append(f"max: {config['max']}")
             if 'recommended_max' in config:
-                limits_info.append(f"Recommended Max: {config['recommended_max']}")
+                limits.append(f"recommended max: {config['recommended_max']}")
             if 'recommended_min' in config:
-                limits_info.append(f"Recommended Min: {config['recommended_min']}")
+                limits.append(f"recommended min: {config['recommended_min']}")
 
-            if limits_info:
-                print("Limits:")
-                for limit in limits_info:
-                    print(f"  - {limit}")
+            if limits:
+                self.cli.display_info("Limits", ", ".join(limits), key_width=25)
 
-            print("-"*70)
+            self.cli.display_separator()
 
-            new_value = input(f"\nEnter new value (or 'q' to cancel): ").strip()
+            new_value = self.cli.get_input("\nEnter new value (or 'q' to cancel)")
 
             if new_value.lower() == 'q':
                 return
 
             # Try to set the setting
             if self.manager.set_setting(setting_key, new_value):
-                print("\n✓ Setting updated successfully!")
+                self.cli.display_success("Setting updated successfully!")
             else:
-                print("\n✗ Failed to update setting")
+                self.cli.display_error("Failed to update setting")
 
         except ValueError:
-            print("\n✗ Invalid input")
+            self.cli.display_error("Invalid input")
 
-        input("\nPress Enter to continue...")
+        self.cli.pause()
 
     def reset_to_defaults(self):
         """Reset all settings to defaults"""
-        self.clear_screen()
+        self.cli.clear_screen()
         self.display_header()
 
-        print("\n" + "-"*70)
-        print("RESET TO DEFAULTS")
-        print("-"*70)
-        print("\n⚠ WARNING: This will reset ALL settings to their default values.")
+        self.cli.display_section("Reset to Defaults")
+        self.cli.display_warning("This will reset ALL settings to their default values.")
         print("Any custom configurations will be lost.")
 
-        confirm = input("\nAre you sure? (yes/no): ").strip().lower()
-
-        if confirm == 'yes':
+        if self.cli.confirm("Are you sure you want to reset?", default=False):
             # Reload default values
             for key, config in self.manager.settings_schema.items():
                 # Reset to defaults (you could store original defaults)
@@ -153,53 +191,47 @@ class SettingsMenu:
             if os.path.exists(self.manager.config_file):
                 try:
                     os.remove(self.manager.config_file)
-                    print(f"\n✓ Deleted {self.manager.config_file}")
+                    self.cli.display_success(f"Deleted {self.manager.config_file}")
                 except Exception as e:
-                    print(f"\n✗ Error deleting config file: {e}")
+                    self.cli.display_error(f"Error deleting config file: {e}")
 
-            print("\n✓ Settings reset to defaults")
+            self.cli.display_success("Settings reset to defaults")
         else:
             print("\nReset cancelled")
 
-        input("\nPress Enter to continue...")
+        self.cli.pause()
 
     def save_settings(self):
         """Save settings to config file"""
-        self.clear_screen()
+        self.cli.clear_screen()
         self.display_header()
 
-        print("\n" + "-"*70)
-        print("SAVE SETTINGS")
-        print("-"*70)
+        self.cli.display_section("Save Settings")
 
         self.manager.save_config()
-        input("\nPress Enter to continue...")
+        self.cli.pause()
 
     def load_settings(self):
         """Load settings from config file"""
-        self.clear_screen()
+        self.cli.clear_screen()
         self.display_header()
 
-        print("\n" + "-"*70)
-        print("LOAD SETTINGS")
-        print("-"*70)
+        self.cli.display_section("Load Settings")
 
         if os.path.exists(self.manager.config_file):
             self.manager.load_config()
-            print("\n✓ Settings loaded successfully")
+            self.cli.display_success("Settings loaded successfully")
         else:
-            print(f"\n⚠ No config file found at {self.manager.config_file}")
+            self.cli.display_warning(f"No config file found at {self.manager.config_file}")
 
-        input("\nPress Enter to continue...")
+        self.cli.pause()
 
     def apply_to_settings_py(self):
         """Apply settings to settings.py"""
-        self.clear_screen()
+        self.cli.clear_screen()
         self.display_header()
 
-        print("\n" + "-"*70)
-        print("APPLY TO SETTINGS.PY")
-        print("-"*70)
+        self.cli.display_section("Apply to Settings.py")
 
         settings_file = os.path.join(
             os.path.dirname(__file__),
@@ -208,77 +240,71 @@ class SettingsMenu:
 
         if os.path.exists(settings_file):
             print(f"\nTarget file: {settings_file}")
-            print("\n⚠ This will modify your settings.py file.")
+            self.cli.display_warning("This will modify your settings.py file.")
 
-            confirm = input("\nContinue? (y/n): ").strip().lower()
-
-            if confirm == 'y':
+            if self.cli.confirm("Continue?", default=False):
                 self.manager.export_to_settings_py(settings_file)
-                print("\n✓ Settings applied to settings.py")
+                self.cli.display_success("Settings applied to settings.py")
             else:
                 print("\nOperation cancelled")
         else:
-            print(f"\n✗ Settings file not found: {settings_file}")
+            self.cli.display_error(f"Settings file not found: {settings_file}")
 
-        input("\nPress Enter to continue...")
+        self.cli.pause()
 
     def auto_configure(self):
         """Auto-configure settings based on system resources"""
-        self.clear_screen()
+        self.cli.clear_screen()
         self.display_header()
 
-        print("\n" + "-"*70)
-        print("AUTO-CONFIGURE (RECOMMENDED)")
-        print("-"*70)
+        self.cli.display_section("Auto-Configure (Recommended)")
 
         cpu_count = self.manager.cpu_count
         memory_gb = self.manager.system_memory_gb
 
         print("\nDetected System Resources:")
-        print(f"  CPU Cores: {cpu_count}")
+        self.cli.display_info("  CPU Cores", str(cpu_count), key_width=20)
         if memory_gb:
-            print(f"  System Memory: {memory_gb:.2f} GB")
+            self.cli.display_info("  System Memory", f"{memory_gb:.2f} GB", key_width=20)
 
-        print("\nRecommended configurations:")
-        print("\n1. Conservative (Recommended for most users)")
-        print(f"   - CONCURRENT_REQUESTS: {cpu_count * 4}")
-        print(f"   - SELENIUM_POOL_SIZE: {cpu_count}")
-        print(f"   - DOWNLOAD_DELAY: 0.5s")
+        print("\nRecommended Configurations:")
+        print()
+        print("1. Conservative (Recommended for most users)")
+        self.cli.display_info("     CONCURRENT_REQUESTS", f"{cpu_count * 4}", key_width=30)
+        self.cli.display_info("     SELENIUM_POOL_SIZE", f"{cpu_count}", key_width=30)
+        self.cli.display_info("     DOWNLOAD_DELAY", "0.5s", key_width=30)
 
         print("\n2. Balanced (Good performance with safety)")
-        print(f"   - CONCURRENT_REQUESTS: {cpu_count * 8}")
-        print(f"   - SELENIUM_POOL_SIZE: {cpu_count * 2}")
-        print(f"   - DOWNLOAD_DELAY: 0.25s")
+        self.cli.display_info("     CONCURRENT_REQUESTS", f"{cpu_count * 8}", key_width=30)
+        self.cli.display_info("     SELENIUM_POOL_SIZE", f"{cpu_count * 2}", key_width=30)
+        self.cli.display_info("     DOWNLOAD_DELAY", "0.25s", key_width=30)
 
         print("\n3. Aggressive (Maximum performance, higher risk)")
-        print(f"   - CONCURRENT_REQUESTS: {cpu_count * 16}")
-        print(f"   - SELENIUM_POOL_SIZE: {min(cpu_count * 3, 24)}")
-        print(f"   - DOWNLOAD_DELAY: 0.1s")
+        self.cli.display_info("     CONCURRENT_REQUESTS", f"{cpu_count * 16}", key_width=30)
+        self.cli.display_info("     SELENIUM_POOL_SIZE", f"{min(cpu_count * 3, 24)}", key_width=30)
+        self.cli.display_info("     DOWNLOAD_DELAY", "0.1s", key_width=30)
 
-        print("\n4. Custom (Current settings)")
+        print("\n4. Custom (Keep current settings)")
 
-        print("\n" + "-"*70)
+        self.cli.display_separator()
 
-        choice = input("\nSelect configuration (1-4, or 'q' to cancel): ").strip()
+        choice = self.cli.get_input("\nSelect configuration (1-4, or 'q' to cancel)")
 
         if choice == '1':
             self._apply_conservative_config()
+            self.cli.display_success("Conservative configuration applied!")
         elif choice == '2':
             self._apply_balanced_config()
+            self.cli.display_success("Balanced configuration applied!")
         elif choice == '3':
             self._apply_aggressive_config()
+            self.cli.display_success("Aggressive configuration applied!")
         elif choice == '4':
             print("\nKeeping current settings")
         else:
             print("\nAuto-configure cancelled")
-            input("\nPress Enter to continue...")
-            return
 
-        if choice in ['1', '2', '3']:
-            print("\n✓ Configuration applied!")
-            self.manager.display_all_settings()
-
-        input("\nPress Enter to continue...")
+        self.cli.pause()
 
     def _apply_conservative_config(self):
         """Apply conservative configuration"""
@@ -319,11 +345,11 @@ class SettingsMenu:
     def run(self):
         """Run the interactive menu"""
         while True:
-            self.clear_screen()
+            self.cli.clear_screen()
             self.display_header()
             self.display_main_menu()
 
-            choice = input("\nEnter your choice (1-9): ").strip()
+            choice = self.cli.get_input("\nEnter your choice (1-9)")
 
             if choice == '1':
                 self.view_system_info()
@@ -342,11 +368,11 @@ class SettingsMenu:
             elif choice == '8':
                 self.auto_configure()
             elif choice == '9':
-                print("\nExiting settings menu...")
+                print("\n✓ Exiting settings menu...")
                 break
             else:
-                print("\n✗ Invalid choice. Please enter 1-9.")
-                input("\nPress Enter to continue...")
+                self.cli.display_error("Invalid choice. Please enter 1-9.")
+                self.cli.pause()
 
 
 def main():
