@@ -9,6 +9,9 @@ commonly used. You can find more settings consulting the documentation:
     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 """
 
+import os
+import multiprocessing
+
 BOT_NAME = 'my_scraper'
 
 SPIDER_MODULES = ['my_scraper.spiders']
@@ -125,3 +128,39 @@ ROTATING_PROXIES = [
     # 'http://proxy2.example.com:8080',
     # 'http://username:password@proxy3.example.com:8080',
 ]
+
+# Performance monitoring and system info
+CPU_COUNT = multiprocessing.cpu_count()
+SYSTEM_MEMORY_GB = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES') / (1024.**3) if hasattr(os, 'sysconf') else 'N/A'
+
+# Display configuration on startup
+import logging
+logger = logging.getLogger(__name__)
+
+def log_startup_info():
+    """Log system and performance configuration information"""
+    logger.info("="*70)
+    logger.info("SCRAPER CONFIGURATION")
+    logger.info("="*70)
+    logger.info(f"CPU Cores Available: {CPU_COUNT}")
+    logger.info(f"System Memory: {SYSTEM_MEMORY_GB:.2f} GB" if isinstance(SYSTEM_MEMORY_GB, float) else f"System Memory: {SYSTEM_MEMORY_GB}")
+    logger.info("-"*70)
+    logger.info("SCRAPY SETTINGS:")
+    logger.info(f"  Concurrent Requests: {CONCURRENT_REQUESTS}")
+    logger.info(f"  Concurrent Requests Per Domain: {CONCURRENT_REQUESTS_PER_DOMAIN}")
+    logger.info(f"  Download Delay: {DOWNLOAD_DELAY}s")
+    logger.info(f"  AutoThrottle Target Concurrency: {AUTOTHROTTLE_TARGET_CONCURRENCY}")
+    logger.info("-"*70)
+    logger.info("SELENIUM SETTINGS:")
+    logger.info(f"  Driver Pool Size: {SELENIUM_POOL_SIZE}")
+    logger.info(f"  Driver Type: {SELENIUM_DRIVER_NAME}")
+    logger.info(f"  Headless Mode: {'--headless' in SELENIUM_DRIVER_ARGUMENTS}")
+    logger.info("-"*70)
+    logger.info("PROXY SETTINGS:")
+    logger.info(f"  Proxy Rotation Enabled: {ENABLE_PROXY_ROTATION}")
+    logger.info(f"  Number of Proxies: {len(ROTATING_PROXIES)}")
+    logger.info("="*70)
+
+# Log startup info when settings are loaded
+# This will be called when the spider starts
+log_startup_info()

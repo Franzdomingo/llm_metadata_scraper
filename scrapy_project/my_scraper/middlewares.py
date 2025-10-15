@@ -44,6 +44,8 @@ class SeleniumMiddleware:
         self.pool_size = pool_size
         self.driver_pool = Queue()
         self.lock = threading.Lock()
+        self.active_drivers = 0
+        self.total_requests_processed = 0
         
     @classmethod
     def from_crawler(cls, crawler):
@@ -95,32 +97,55 @@ class SeleniumMiddleware:
 
     def spider_opened(self, spider):
         """Initialize the Selenium driver pool when spider opens"""
-        logging.info(f'Initializing Selenium {self.driver_name} driver pool with {self.pool_size} drivers')
+        import multiprocessing
+        cpu_count = multiprocessing.cpu_count()
+
+        logging.info("="*70)
+        logging.info("SELENIUM DRIVER POOL INITIALIZATION")
+        logging.info("="*70)
+        logging.info(f'System CPU Cores: {cpu_count}')
+        logging.info(f'Initializing {self.pool_size} {self.driver_name} drivers ({self.pool_size/cpu_count*100:.1f}% of CPU cores)')
+        logging.info("-"*70)
 
         for i in range(self.pool_size):
             try:
                 driver = self._create_driver()
                 self.driver_pool.put(driver)
-                logging.info(f'Driver {i+1}/{self.pool_size} initialized')
+                logging.info(f'Driver {i+1}/{self.pool_size} initialized successfully')
             except Exception as e:
                 logging.error(f'Failed to initialize driver {i+1}: {e}')
 
-        logging.info(f'Selenium driver pool initialized with {self.driver_pool.qsize()} drivers')
+        initialized_count = self.driver_pool.qsize()
+        logging.info("="*70)
+        logging.info(f'Driver Pool Ready: {initialized_count}/{self.pool_size} drivers available')
+        logging.info(f'Active Drivers: {self.active_drivers}')
+        logging.info("="*70)
     
     def spider_closed(self, spider):
         """Close all Selenium drivers in the pool when spider closes"""
-        logging.info('Closing Selenium driver pool')
+        logging.info("="*70)
+        logging.info("SELENIUM DRIVER POOL SHUTDOWN")
+        logging.info("="*70)
+        logging.info(f'Total Requests Processed: {self.total_requests_processed}')
+        logging.info(f'Active Drivers at Shutdown: {self.active_drivers}')
+        logging.info(f'Available Drivers in Pool: {self.driver_pool.qsize()}')
+        logging.info("-"*70)
+
         closed_count = 0
         while not self.driver_pool.empty():
             try:
                 driver = self.driver_pool.get_nowait()
                 driver.quit()
                 closed_count += 1
+                logging.info(f'Closed driver {closed_count}/{self.pool_size}')
             except Empty:
                 break
             except Exception as e:
                 logging.error(f'Error closing driver: {e}')
-        logging.info(f'Closed {closed_count} drivers')
+
+        logging.info("="*70)
+        logging.info(f'Driver Pool Shutdown Complete: {closed_count} drivers closed')
+        logging.info("="*70)
     
     def process_request(self, request, spider):
         """
@@ -136,8 +161,15 @@ class SeleniumMiddleware:
         driver = None
         try:
             # Get a driver from the pool (blocks if pool is empty)
+            available_before = self.driver_pool.qsize()
             driver = self.driver_pool.get(timeout=30)
-            logging.debug(f'Acquired driver from pool (pool size: {self.driver_pool.qsize()})')
+
+            with self.lock:
+                self.active_drivers += 1
+                self.total_requests_processed += 1
+
+            available_after = self.driver_pool.qsize()
+            logging.debug(f'Acquired driver from pool | Active: {self.active_drivers}/{self.pool_size} | Available: {available_after} | Total Processed: {self.total_requests_processed}')
 
             # Load the page
             logging.debug(f'Loading URL in driver: {request.url}')
@@ -182,6 +214,8 @@ class SeleniumMiddleware:
             logging.error(f'Selenium error processing {request.url}: {e}')
             # Return driver to pool if we acquired it
             if driver:
+                with self.lock:
+                    self.active_drivers -= 1
                 self.driver_pool.put(driver)
             return None
 
@@ -189,8 +223,13 @@ class SeleniumMiddleware:
         """Return driver to pool after processing"""
         if request.meta.get('driver_from_pool') and request.meta.get('driver'):
             driver = request.meta['driver']
+
+            with self.lock:
+                self.active_drivers -= 1
+
             self.driver_pool.put(driver)
-            logging.debug(f'Returned driver to pool (pool size: {self.driver_pool.qsize()})')
+            available = self.driver_pool.qsize()
+            logging.debug(f'Returned driver to pool | Active: {self.active_drivers}/{self.pool_size} | Available: {available}')
         return response
 
 

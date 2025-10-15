@@ -1,2 +1,3 @@
 beautifulsoup4
 scrapy>=2.8.0  # for advanced web scraping
+psutil  # for system resource monitoring

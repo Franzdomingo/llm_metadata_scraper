@@ -286,32 +286,38 @@ class SpiderManager:
             print("\n" + "=" * 80)
             print("LLM Metadata Scraper - Interactive Menu".center(80))
             print("=" * 80)
-            
+
             if not self.detected_spiders:
                 print("\n[!] No spiders detected!")
                 break
-            
+
             print("\nAvailable Spiders:")
             for i, spider in enumerate(self.detected_spiders, 1):
                 print(f"  {i}. {spider['name']} - {spider['description']}")
-            
+
             print(f"\n  {len(self.detected_spiders) + 1}. Run ALL spiders")
+            print(f"  {len(self.detected_spiders) + 2}. Settings Menu")
             print(f"  0. Exit")
             
             try:
                 choice = input("\nSelect spider number (0 to exit): ").strip()
-                
+
                 if choice == '0':
                     print("\nGoodbye!")
                     break
-                
+
                 choice_num = int(choice)
-                
+
                 if choice_num == len(self.detected_spiders) + 1:
                     # Run all spiders
                     self.run_all_spiders()
                     break  # Exit after running all
-                
+
+                elif choice_num == len(self.detected_spiders) + 2:
+                    # Open settings menu
+                    self.open_settings_menu()
+                    continue  # Return to main menu after settings
+
                 elif 1 <= choice_num <= len(self.detected_spiders):
                     spider = self.detected_spiders[choice_num - 1]
                     
@@ -339,8 +345,8 @@ class SpiderManager:
                     break  # Exit after running
                 
                 else:
-                    print(f"[!] Invalid choice! Please select 0-{len(self.detected_spiders) + 1}")
-            
+                    print(f"[!] Invalid choice! Please select 0-{len(self.detected_spiders) + 2}")
+
             except ValueError:
                 print("[!] Invalid input! Please enter a number.")
             except KeyboardInterrupt:
@@ -348,6 +354,30 @@ class SpiderManager:
                 break
             except Exception as e:
                 print(f"[!] Error: {e}")
+
+    def open_settings_menu(self):
+        """Open the settings configuration menu"""
+        try:
+            from my_scraper.settings_manager import SettingsManager
+            from my_scraper.settings_menu import SettingsMenu
+
+            # Get config file path
+            config_file = self.project_dir / 'my_scraper' / 'scraper_config.json'
+
+            # Create settings manager and menu
+            manager = SettingsManager(config_file=str(config_file))
+            menu = SettingsMenu(manager)
+
+            # Run the settings menu
+            menu.run()
+
+        except ImportError as e:
+            print(f"\n[!] Error: Settings menu module not found: {e}")
+            print("[!] Make sure settings_manager.py and settings_menu.py are in my_scraper/")
+        except Exception as e:
+            print(f"\n[!] Error opening settings menu: {e}")
+            import traceback
+            traceback.print_exc()
 
 
 def main():
