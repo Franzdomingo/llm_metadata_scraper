@@ -1,7 +1,7 @@
 -- Table to store main Kaggle model info
 CREATE TABLE kaggle_models (
     id SERIAL PRIMARY KEY,
-    kaggle_model_url TEXT UNIQUE NOT NULL,
+    kaggle_url TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
     scraped_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     downloads INT,

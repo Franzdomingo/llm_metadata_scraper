@@ -217,10 +217,49 @@ class KaggleSelectors:
 
 
 class NvidiaSelectors:
-    """Configuration class for Nvidia scraping selectors (placeholder for future use)"""
-    
-    # Add Nvidia-specific selectors here if needed
-    pass
+    """Configuration class for Nvidia scraping selectors"""
+
+    # Model card selectors on the main page
+    # Target: All model cards on the page
+    MODEL_CARDS: str = 'a[data-linkbox-overlay="true"]'
+
+    # Model name selector within each card
+    # Target: The title attribute containing the model name
+    MODEL_NAME_ATTRIBUTE: str = 'title'
+
+    # Model URL selector (href attribute)
+    # Target: The href attribute containing the relative URL
+    MODEL_URL_ATTRIBUTE: str = 'href'
+
+    # Initial visible tags container
+    # Target: div containing the first set of visible tag buttons
+    # Example: <div class="flex items-center gap-2 overflow-hidden">
+    VISIBLE_TAGS_CONTAINER: str = 'div.flex.items-center.gap-2.overflow-hidden'
+
+    # Individual visible tag buttons/links
+    # Target: button elements containing tag links
+    # Example: <button class="inline-flex min-w-fit..."><a href="/search?q=tool+calling">tool calling</a></button>
+    VISIBLE_TAG_BUTTONS: str = 'button.inline-flex.min-w-fit'
+
+    # Tag link within button (to get tag text)
+    TAG_LINK: str = 'a'
+
+    # "More tags" button selector (e.g., "+3" button)
+    # Target: button that opens popover with additional tags
+    # Example: <button data-testid="nv-popover-trigger" type="button"...>+3</button>
+    MORE_TAGS_BUTTON: str = 'button[data-testid="nv-popover-trigger"]'
+
+    # Popover container (appears after clicking more tags button)
+    # Target: div containing the additional tags in the popover
+    # Example: <div class="flex w-fit max-w-[calc(...)] flex-wrap items-center gap-2...">
+    POPOVER_TAGS_CONTAINER: str = 'div.flex.w-fit.max-w-\\[calc\\(var\\(--radix-popover-content-available-width\\)_-_32px\\)\\]'
+
+    # Alternative simpler popover selector
+    POPOVER_TAGS_CONTAINER_ALT: str = 'div[class*="flex"][class*="w-fit"][class*="flex-wrap"]'
+
+    # Tag buttons within popover
+    # Same structure as visible tags
+    POPOVER_TAG_BUTTONS: str = 'button.inline-flex.min-w-fit'
 
 
 class GeneralSelectors:
@@ -289,7 +328,16 @@ def get_selectors_for_site(site: str) -> Dict:
             'next_button_alt_xpath': KaggleSelectors.NEXT_BUTTON_ALT_XPATH,
         },
         'nvidia': {
-            # Add Nvidia selectors when needed
+            'model_cards': NvidiaSelectors.MODEL_CARDS,
+            'model_name_attr': NvidiaSelectors.MODEL_NAME_ATTRIBUTE,
+            'model_url_attr': NvidiaSelectors.MODEL_URL_ATTRIBUTE,
+            'visible_tags_container': NvidiaSelectors.VISIBLE_TAGS_CONTAINER,
+            'visible_tag_buttons': NvidiaSelectors.VISIBLE_TAG_BUTTONS,
+            'tag_link': NvidiaSelectors.TAG_LINK,
+            'more_tags_button': NvidiaSelectors.MORE_TAGS_BUTTON,
+            'popover_tags_container': NvidiaSelectors.POPOVER_TAGS_CONTAINER,
+            'popover_tags_container_alt': NvidiaSelectors.POPOVER_TAGS_CONTAINER_ALT,
+            'popover_tag_buttons': NvidiaSelectors.POPOVER_TAG_BUTTONS,
         }
     }
     

@@ -39,3 +39,11 @@ class TransformersVariationItem(scrapy.Item):
     model_card = scrapy.Field()
     is_finetunable = scrapy.Field()
     example_usage = scrapy.Field()
+
+
+class NvidiaModelItem(scrapy.Item):
+    """Item for NVIDIA model metadata"""
+    name = scrapy.Field()
+    nvidia_url = scrapy.Field()
+    tags = scrapy.Field()
+    scraped_on = scrapy.Field()  # Timestamp when data was scraped
